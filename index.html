@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RHC Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  :root {
+    --ink:    #080808;
+    --ink2:   #111111;
+    --ink3:   #1a1a1a;
+    --border: #222222;
+    --border2:#2a2a2a;
+    --paper:  #f5f3ef;
+    --muted:  #888888;
+    --accent: #00e5a0;
+    --accent2:#00b87a;
+    --red:    #e26b6b;
+    --font-head: 'Syne', sans-serif;
+    --font-sans: 'Inter', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--ink); color: var(--paper); font-family: var(--font-sans); min-height: 100vh; }
+
+  /* ── AUTH ── */
+  #auth-page {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: var(--ink);
+  }
+  .auth-box {
+    width: 380px; padding: 48px 40px;
+    background: var(--ink2); border: 1px solid var(--border); border-radius: 20px;
+  }
+  .auth-logo { font-family: var(--font-head); font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+  .auth-logo span { color: var(--accent); }
+  .auth-badge {
+    display: inline-block; background: rgba(0,229,160,.1); color: var(--accent);
+    font-size: 10px; font-weight: 600; letter-spacing: 1px; padding: 3px 10px;
+    border-radius: 20px; border: 1px solid rgba(0,229,160,.2); margin-bottom: 32px;
+  }
+  .auth-title { font-family: var(--font-head); font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+  .auth-sub { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
+  .form-group { margin-bottom: 16px; }
+  .form-label { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+  .form-input {
+    width: 100%; background: var(--ink3); border: 1px solid var(--border2);
+    border-radius: 10px; padding: 12px 14px; font-size: 14px; color: var(--paper);
+    font-family: var(--font-sans); transition: border-color .2s;
+  }
+  .form-input:focus { outline: none; border-color: var(--accent); }
+  .btn-primary {
+    width: 100%; background: var(--accent); color: var(--ink); border: none;
+    border-radius: 10px; padding: 13px; font-size: 14px; font-weight: 700;
+    font-family: var(--font-head); cursor: pointer; transition: all .2s; margin-top: 8px;
+  }
+  .btn-primary:hover { background: var(--accent2); }
+  .error-msg { background: rgba(226,107,107,.1); border: 1px solid rgba(226,107,107,.3); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: var(--red); margin-bottom: 16px; display: none; }
+
+  /* ── MAIN ── */
+  #main-page { display: none; min-height: 100vh; }
+
+  /* NAV */
+  .nav {
+    background: var(--ink2); border-bottom: 1px solid var(--border);
+    padding: 0 32px; display: flex; align-items: center; height: 60px; gap: 32px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .nav-logo { font-family: var(--font-head); font-size: 18px; font-weight: 800; }
+  .nav-logo span { color: var(--accent); }
+  .nav-badge {
+    background: rgba(0,229,160,.1); color: var(--accent); font-size: 10px;
+    font-weight: 600; letter-spacing: 1px; padding: 3px 8px; border-radius: 20px;
+    border: 1px solid rgba(0,229,160,.2);
+  }
+  .nav-tabs { display: flex; gap: 4px; flex: 1; }
+  .nav-tab {
+    padding: 8px 16px; border-radius: 8px; font-size: 13px; color: var(--muted);
+    cursor: pointer; transition: all .15s; font-family: var(--font-sans); border: none; background: none;
+  }
+  .nav-tab:hover { color: var(--paper); background: var(--ink3); }
+  .nav-tab.active { color: var(--paper); background: var(--ink3); }
+  .nav-right { display: flex; align-items: center; gap: 12px; }
+  .nav-user { font-size: 13px; color: var(--muted); }
+  .btn-logout {
+    background: none; border: 1px solid var(--border2); border-radius: 8px;
+    padding: 7px 14px; font-size: 12px; color: var(--muted); cursor: pointer;
+    font-family: var(--font-sans); transition: all .15s;
+  }
+  .btn-logout:hover { color: var(--red); border-color: var(--red); }
+
+  /* CONTENT */
+  .content { max-width: 1100px; margin: 0 auto; padding: 40px 32px; }
+
+  /* TABS */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* PAGE HEADER */
+  .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 32px; }
+  .page-title { font-family: var(--font-head); font-size: 28px; font-weight: 800; }
+  .page-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+  /* STATS */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+  .stat-card {
+    background: var(--ink2); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px 22px;
+  }
+  .stat-val { font-family: var(--font-head); font-size: 32px; font-weight: 800; color: var(--accent); }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* TABLE */
+  .table-wrap { background: var(--ink2); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .table-head {
+    display: grid; padding: 12px 20px;
+    background: var(--ink3); font-size: 11px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid var(--border);
+  }
+  .table-row {
+    display: grid; padding: 14px 20px;
+    border-bottom: 1px solid var(--border); align-items: center;
+    transition: background .15s;
+  }
+  .table-row:last-child { border-bottom: none; }
+  .table-row:hover { background: var(--ink3); }
+  .companies-grid { grid-template-columns: 2fr 1.5fr 1fr 1fr 120px; }
+  .invites-grid   { grid-template-columns: 2fr 1.5fr 1fr 1fr 120px; }
+
+  .company-avatar {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: rgba(0,229,160,.1); border: 1px solid rgba(0,229,160,.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; color: var(--accent); font-family: var(--font-head);
+    flex-shrink: 0;
+  }
+  .company-info { display: flex; align-items: center; gap: 12px; }
+
+  .status-pill {
+    display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500;
+  }
+  .pill-active   { background: rgba(0,229,160,.1); color: var(--accent); }
+  .pill-pending  { background: rgba(239,184,74,.1); color: #efb84a; }
+  .pill-used     { background: rgba(100,181,246,.1); color: #64b5f6; }
+
+  .action-btn {
+    background: none; border: 1px solid var(--border2); border-radius: 6px;
+    padding: 5px 10px; font-size: 11px; color: var(--muted); cursor: pointer;
+    transition: all .15s; font-family: var(--font-sans); white-space: nowrap;
+  }
+  .action-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .action-btn.danger:hover { border-color: var(--red); color: var(--red); }
+  .action-btn.enter:hover { background: rgba(0,229,160,.1); }
+
+  /* MODAL */
+  .modal-bg {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75);
+    z-index: 200; align-items: center; justify-content: center;
+  }
+  .modal-bg.open { display: flex; }
+  .modal {
+    background: var(--ink2); border: 1px solid var(--border); border-radius: 16px;
+    padding: 28px 32px; width: 480px; max-width: 95vw;
+  }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+  .modal-title { font-family: var(--font-head); font-size: 18px; font-weight: 700; }
+  .modal-close { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+  .modal-close:hover { color: var(--paper); background: var(--ink3); }
+
+  /* LINK BOX */
+  .link-box {
+    background: var(--ink3); border: 1px solid rgba(0,229,160,.2); border-radius: 10px;
+    padding: 14px 16px; margin-top: 16px; display: none;
+  }
+  .link-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+  .link-text { font-size: 12px; color: var(--accent); word-break: break-all; line-height: 1.6; margin-bottom: 12px; }
+  .btn-copy {
+    width: 100%; background: rgba(0,229,160,.1); border: 1px solid rgba(0,229,160,.3);
+    border-radius: 8px; color: var(--accent); font-size: 13px; font-weight: 600;
+    padding: 10px; cursor: pointer; font-family: var(--font-head); transition: all .2s;
+  }
+  .btn-copy:hover { background: rgba(0,229,160,.2); }
+
+  /* TOAST */
+  #toast {
+    position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--ink3); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 20px; font-size: 13px; color: var(--paper); z-index: 999;
+    transition: transform .3s; pointer-events: none; white-space: nowrap;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* EMPTY */
+  .empty { padding: 60px 20px; text-align: center; color: var(--muted); font-size: 14px; }
+
+  /* IMPERSONATE OVERLAY */
+  #imp-bar {
+    display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+    background: var(--accent); color: var(--ink); padding: 8px 20px;
+    font-size: 13px; font-weight: 600; font-family: var(--font-head);
+    display: none; align-items: center; justify-content: space-between;
+  }
+  #imp-bar button {
+    background: rgba(0,0,0,.15); border: none; border-radius: 6px;
+    padding: 5px 14px; font-size: 12px; font-weight: 700; cursor: pointer;
+    font-family: var(--font-head);
+  }
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-page">
+  <div class="auth-box">
+    <div class="auth-logo">RH<span>C</span></div>
+    <div class="auth-badge">SUPER ADMIN</div>
+    <div class="auth-title">Acesso restrito</div>
+    <div class="auth-sub">Apenas membros da equipa RHC</div>
+    <div class="error-msg" id="auth-error"></div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input class="form-input" id="login-email" type="email" placeholder="exemplo@rhc.pt" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <div style="position:relative;">
+        <input class="form-input" id="login-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" style="padding-right:42px;" />
+        <button type="button" onclick="toggleAdminPass()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#555;padding:4px;">
+          <svg id="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="doLogin()">Entrar →</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main-page">
+  <nav class="nav">
+    <div class="nav-logo">RH<span>C</span></div>
+    <div class="nav-badge">ADMIN</div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="showTab('companies')">Empresas</button>
+      <button class="nav-tab" onclick="showTab('invites')">Convites</button>
+      <button class="nav-tab" onclick="showTab('admins')">Super Admins</button>
+      <button class="nav-tab" id="tab-tickets-btn" onclick="showTab('tickets')">🎫 Tickets <span id="tickets-badge" style="display:none;background:#e26b6b;color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;margin-left:4px;">0</span></button>
+    </div>
+    <div class="nav-right">
+      <span class="nav-user" id="nav-user-name"></span>
+      <button class="btn-logout" onclick="doLogout()">Sair</button>
+    </div>
+  </nav>
+
+  <div class="content">
+
+    <!-- TAB: COMPANIES -->
+    <div class="tab-panel active" id="tab-companies">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Empresas</div>
+          <div class="page-sub" id="companies-sub">A carregar...</div>
+        </div>
+        <button class="btn-primary" style="width:auto;padding:11px 24px;margin-top:0;" onclick="openModal('modal-invite')">+ Enviar convite</button>
+      </div>
+
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);">
+        <div class="stat-card">
+          <div class="stat-val" id="stat-total">0</div>
+          <div class="stat-label">Empresas activas</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" id="stat-candidates">0</div>
+          <div class="stat-label">Total candidatos</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" id="stat-invites-pending">0</div>
+          <div class="stat-label">Convites pendentes</div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-head companies-grid">
+          <div>Empresa</div>
+          <div>Email</div>
+          <div>Candidatos</div>
+          <div>Estado</div>
+          <div>Acções</div>
+        </div>
+        <div id="companies-body"></div>
+      </div>
+    </div>
+
+    <!-- TAB: INVITES -->
+    <div class="tab-panel" id="tab-invites">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Convites</div>
+          <div class="page-sub">Histórico de todos os convites enviados</div>
+        </div>
+        <button class="btn-primary" style="width:auto;padding:11px 24px;margin-top:0;" onclick="openModal('modal-invite')">+ Enviar convite</button>
+      </div>
+      <div class="table-wrap">
+        <div class="table-head invites-grid">
+          <div>Empresa</div>
+          <div>Email</div>
+          <div>Criado em</div>
+          <div>Estado</div>
+          <div>Link</div>
+        </div>
+        <div id="invites-body"></div>
+      </div>
+    </div>
+
+    <!-- TAB: ADMINS -->
+    <div class="tab-panel" id="tab-admins">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Super Admins</div>
+          <div class="page-sub">Membros da equipa RHC com acesso total</div>
+        </div>
+        <button class="btn-primary" style="width:auto;padding:11px 24px;margin-top:0;" onclick="openModal('modal-add-admin')">+ Adicionar admin</button>
+      </div>
+      <div class="table-wrap">
+        <div class="table-head" style="grid-template-columns:2fr 2fr 1fr;">
+          <div>Nome</div>
+          <div>Email</div>
+          <div>Acções</div>
+        </div>
+        <div id="admins-body"></div>
+      </div>
+    </div>
+
+    <!-- TICKETS PAGE -->
+    <div class="tab-panel" id="tab-tickets">
+      <div class="page-header">
+        <div>
+          <div class="page-title">🎫 Tickets de Suporte</div>
+          <div class="page-sub">Pedidos de ajuda dos candidatos</div>
+        </div>
+      </div>
+      <div id="tickets-body" style="margin-top:16px;"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL: TICKET DETAIL -->
+<div class="modal-bg" id="modal-ticket" onclick="if(event.target===this)closeModal('modal-ticket')">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <div class="modal-title" id="ticket-modal-title">Ticket de Suporte</div>
+      <button class="modal-close" onclick="closeModal('modal-ticket')">×</button>
+    </div>
+    <div id="ticket-modal-body"></div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid #1e1e1e;">
+      <textarea id="ticket-reply-text" placeholder="Escreve a tua resposta ao candidato..." style="width:100%;background:#0d0d0d;border:1px solid #2a2a2a;border-radius:8px;color:#ddd;font-size:13px;padding:12px;min-height:80px;resize:vertical;font-family:inherit;box-sizing:border-box;"></textarea>
+      <div style="display:flex;gap:8px;">
+        <button onclick="replyTicket()" style="flex:2;padding:11px;background:var(--accent);border:none;border-radius:8px;color:#0e0e0e;font-size:13px;font-weight:700;cursor:pointer;">✓ Responder e fechar</button>
+        <button onclick="resendInviteTicket()" id="btn-resend-invite" style="flex:1;padding:11px;background:rgba(239,184,74,.1);border:1px solid rgba(239,184,74,.3);border-radius:8px;color:#efb84a;font-size:13px;cursor:pointer;">📧 Reenviar convite</button>
+        <button onclick="closeModal('modal-ticket')" style="flex:1;padding:11px;background:none;border:1px solid #2a2a2a;border-radius:8px;color:#888;font-size:13px;cursor:pointer;">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: INVITE -->
+<div class="modal-bg" id="modal-invite">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Convidar empresa</div>
+      <button class="modal-close" onclick="closeModal('modal-invite')">×</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nome da empresa</label>
+      <input class="form-input" id="inv-company" placeholder="ex: Empresa Exemplo Lda" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email do recruiter</label>
+      <input class="form-input" id="inv-email" type="email" placeholder="recruiter@empresa.pt" />
+    </div>
+    <button class="btn-primary" onclick="generateInvite()">Enviar convite</button>
+    <div class="link-box" id="inv-link-box">
+      <div class="link-label">Link de convite</div>
+      <div class="link-text" id="inv-link-text"></div>
+      <button class="btn-copy" onclick="copyInviteLink()">📋 Copiar link</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ADD ADMIN -->
+<div class="modal-bg" id="modal-add-admin">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Adicionar super admin</div>
+      <button class="modal-close" onclick="closeModal('modal-add-admin')">×</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nome</label>
+      <input class="form-input" id="new-admin-name" placeholder="Nome completo" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input class="form-input" id="new-admin-email" type="email" placeholder="email@rhc.pt" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input class="form-input" id="new-admin-pass" type="password" placeholder="Mínimo 8 caracteres" />
+    </div>
+    <button class="btn-primary" onclick="addAdmin()">Adicionar admin</button>
+  </div>
+</div>
+
+<!-- MODAL: CONFIRM -->
+<div class="modal-bg" id="modal-confirm">
+  <div class="modal" style="width:420px;">
+    <div class="modal-header">
+      <div class="modal-title">⚠️ Confirmar acção</div>
+      <button class="modal-close" onclick="closeConfirm()">×</button>
+    </div>
+    <p id="confirm-modal-msg" style="font-size:14px;color:#aaa;line-height:1.6;margin-bottom:24px;"></p>
+    <div style="display:flex;gap:10px;">
+      <button id="confirm-modal-btn" class="btn-primary" style="flex:1;background:#e26b6b;">Sim, confirmar</button>
+      <button onclick="closeConfirm()" style="flex:1;padding:11px;background:none;border:1px solid #2a2a2a;border-radius:8px;color:#888;font-size:13px;cursor:pointer;font-family:var(--font-sans);">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+const SUPA_URL = 'https://sgecgsnxljohhfbftevg.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNnZWNnc254bGpvaGhmYmZ0ZXZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3NzMzNjQsImV4cCI6MjA5MjM0OTM2NH0.Igv5qrLk8NwsheStNv7VY4cvdCO-svEGx6S89OZubps';
+const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+const RECRUITER_PORTAL = 'https://portal.rhc.pt';
+const CANDIDATE_PORTAL = 'https://rhccandidatos.vercel.app';
+const ADMIN_SESSION_KEY = 'rhc_admin_session';
+
+let ADMIN = null;
+let STATE = { companies: [], invites: [], admins: [] };
+
+function toggleAdminPass() {
+  const input = document.getElementById('login-pass');
+  const icon  = document.getElementById('eye-icon');
+  if(input.type === 'password') {
+    input.type = 'text';
+    icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22"/>';
+  } else {
+    input.type = 'password';
+    icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  }
+}
+
+// ── AUTH ──────────────────────────────────────────
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  const pass  = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('auth-error');
+  errEl.style.display = 'none';
+
+  if(!email || !pass) { showAuthErr('Preenche email e password.'); return; }
+
+  try {
+    const { data, error } = await supa
+      .from('superadmins')
+      .select('*')
+      .eq('email', email)
+      .eq('password', pass)
+      .maybeSingle();
+
+    if(error) { showAuthErr('Erro de ligação: ' + error.message); return; }
+    if(!data)  { showAuthErr('Email ou password incorrectos.'); return; }
+
+    ADMIN = data;
+    localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(data));
+    enterAdmin();
+  } catch(e) {
+    showAuthErr('Erro de ligação. Tenta novamente.');
+  }
+}
+
+function showAuthErr(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+function doLogout() {
+  localStorage.removeItem(ADMIN_SESSION_KEY);
+  ADMIN = null;
+  document.getElementById('main-page').style.display = 'none';
+  document.getElementById('auth-page').style.display = 'flex';
+}
+
+async function enterAdmin() {
+  document.getElementById('auth-page').style.display = 'none';
+  document.getElementById('main-page').style.display = 'block';
+  document.getElementById('nav-user-name').textContent = ADMIN.name;
+  await loadData();
+}
+
+// ── DATA ──────────────────────────────────────────
+async function loadData() {
+  try {
+    const orgsRes    = await supa.from('organizations').select('*').order('created_at', { ascending: false });
+    const candsRes   = await supa.from('candidates').select('org_id');
+    const invitesRes = await supa.from('company_invites').select('*').order('created_at', { ascending: false });
+    const adminsRes  = await supa.from('superadmins').select('*').order('created_at', { ascending: false });
+
+    // Show any errors visibly on screen
+    const errors = [];
+    if(orgsRes.error)    errors.push('organizations: ' + orgsRes.error.message);
+    if(candsRes.error)   errors.push('candidates: ' + candsRes.error.message);
+    if(invitesRes.error) errors.push('company_invites: ' + invitesRes.error.message);
+    if(adminsRes.error)  errors.push('superadmins: ' + adminsRes.error.message);
+
+    if(errors.length) {
+      document.getElementById('companies-sub').textContent = 'ERRO: ' + errors.join(' | ');
+      showToast('⚠️ Erro: ' + errors[0]);
+      return;
+    }
+
+    const candCount = {};
+    (candsRes.data||[]).forEach(c => { candCount[c.org_id] = (candCount[c.org_id]||0) + 1; });
+
+    STATE.companies = (orgsRes.data||[]).map(o => ({ ...o, candidateCount: candCount[o.id] || 0 }));
+    STATE.invites   = invitesRes.data || [];
+    STATE.admins    = adminsRes.data  || [];
+
+    document.getElementById('stat-total').textContent           = STATE.companies.length;
+    document.getElementById('stat-candidates').textContent      = Object.values(candCount).reduce((a,b)=>a+b,0);
+    document.getElementById('stat-invites-pending').textContent = STATE.invites.filter(i=>!i.used).length;
+    document.getElementById('companies-sub').textContent        = `${STATE.companies.length} empresa${STATE.companies.length!==1?'s':''} registada${STATE.companies.length!==1?'s':''}`;
+
+    renderCompanies();
+    renderInvites();
+    renderAdmins();
+    loadTicketsBadge();
+  } catch(e) {
+    document.getElementById('companies-sub').textContent = 'ERRO GERAL: ' + e.message;
+    showToast('⚠️ ' + e.message);
+  }
+}
+
+// ── RENDER ────────────────────────────────────────
+function initials(name) {
+  if(!name) return '?';
+  return name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+}
+
+function renderCompanies() {
+  const body = document.getElementById('companies-body');
+  if(!STATE.companies.length) {
+    body.innerHTML = '<div class="empty">Nenhuma empresa registada ainda.<br>Envia o primeiro convite para começar.</div>';
+    return;
+  }
+  body.innerHTML = STATE.companies.map(c => `
+    <div class="table-row companies-grid">
+      <div class="company-info">
+        <div class="company-avatar">${initials(c.name)}</div>
+        <div>
+          <div style="font-size:13px;color:#ddd;font-weight:500;">${c.name||'—'}</div>
+          <div style="font-size:11px;color:#555;">${c.owner_id||'—'}</div>
+        </div>
+      </div>
+      <div style="font-size:13px;color:#aaa;">${c.email||'—'}</div>
+      <div style="font-size:13px;color:#aaa;">${c.candidateCount}</div>
+      <div><span class="status-pill pill-active">Activa</span></div>
+      <div style="display:flex;gap:6px;">
+        <button class="action-btn enter" onclick="enterAsCompany('${c.id}','${encodeURIComponent(c.name||'')}')">Entrar</button>
+        <button class="action-btn danger" onclick="removeCompany('${c.id}','${encodeURIComponent(c.name||'')}')">Remover</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderInvites() {
+  const body = document.getElementById('invites-body');
+  if(!STATE.invites.length) {
+    body.innerHTML = '<div class="empty">Nenhum convite criado ainda.</div>';
+    return;
+  }
+  body.innerHTML = STATE.invites.map(inv => {
+    const date = new Date(inv.created_at).toLocaleDateString('pt-PT');
+    const link = `${RECRUITER_PORTAL}?invite=${inv.token}&company=${encodeURIComponent(inv.company_name)}`;
+    return `
+    <div class="table-row invites-grid">
+      <div style="font-size:13px;color:#ddd;font-weight:500;">${inv.company_name}</div>
+      <div style="font-size:13px;color:#aaa;">${inv.email||'—'}</div>
+      <div style="font-size:12px;color:#555;">${date}</div>
+      <div><span class="status-pill ${inv.used?'pill-used':'pill-pending'}">${inv.used?'Usado':'Pendente'}</span></div>
+      <div style="display:flex;gap:5px;">
+        <button class="action-btn" onclick="copyLink('${link}')">📋 Link</button>
+        ${!inv.used ? `<button class="action-btn danger" onclick="cancelInvite('${inv.id}')">Cancelar</button>` : ''}
+      </div>
+    </div>`; }).join('');
+}
+
+function renderAdmins() {
+  const body = document.getElementById('admins-body');
+  body.innerHTML = STATE.admins.map(a => `
+    <div class="table-row" style="grid-template-columns:2fr 2fr 1fr;">
+      <div style="font-size:13px;color:#ddd;">${a.name}</div>
+      <div style="font-size:13px;color:#aaa;">${a.email}</div>
+      <div>
+        ${a.email !== ADMIN.email ? `<button class="action-btn danger" onclick="removeAdmin('${a.id}')">Remover</button>` : '<span style="font-size:11px;color:#555;">Tu</span>'}
+      </div>
+    </div>`).join('');
+}
+
+// ── INVITE ────────────────────────────────────────
+async function generateInvite() {
+  const company = document.getElementById('inv-company').value.trim();
+  const email   = document.getElementById('inv-email').value.trim();
+  if(!company) { showToast('⚠️ Insere o nome da empresa'); return; }
+
+  const btn = document.querySelector('#modal-invite .btn-primary');
+  if(btn) { btn.disabled = true; btn.textContent = 'A enviar...'; }
+
+  const token = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+  const { error } = await supa.from('company_invites').insert({
+    company_name: company, email: email||null,
+    token, created_by: ADMIN.email
+  });
+  if(error) { showToast('Erro ao criar convite'); if(btn){btn.disabled=false;btn.textContent='Enviar convite';} return; }
+
+  const link = `${RECRUITER_PORTAL}?invite=${token}&company=${encodeURIComponent(company)}${email ? '&email=' + encodeURIComponent(email) : ''}`;
+  document.getElementById('inv-link-text').textContent = link;
+  document.getElementById('inv-link-text').dataset.url = link;
+  document.getElementById('inv-link-box').style.display = 'block';
+
+  // Send email via Resend if email provided
+  if(email) {
+    try {
+      const emailRes = await fetch('https://rhcportal.vercel.app/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: 'RHC Team <convites@rhc.pt>',
+          to: [email],
+          subject: 'Connect to RHC',
+          html: `
+            <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#0e0e0e;color:#f5f3ef;border-radius:16px;overflow:hidden;">
+              <div style="background:#0F6E56;padding:32px 36px;">
+                <div style="font-size:26px;font-weight:700;letter-spacing:-1px;">RH<span style="color:#5DCAA5;">C</span></div>
+                <div style="font-size:13px;opacity:.7;margin-top:4px;">Recrutamento Inteligente</div>
+              </div>
+              <div style="padding:36px;">
+                <p style="font-size:15px;line-height:1.8;color:#ccc;margin:0 0 20px;">Olá,</p>
+                <p style="font-size:15px;line-height:1.8;color:#ccc;margin:0 0 20px;">
+                  Thank you for registering on our platform.<br><br>
+                  To start using all features and access available opportunities, please complete your account setup by clicking the link below:
+                </p>
+                <div style="text-align:center;margin:32px 0;">
+                  <a href="${link}" style="background:#5DCAA5;color:#0e0e0e;text-decoration:none;padding:14px 36px;border-radius:10px;font-weight:700;font-size:15px;display:inline-block;">
+                    Access RHC Platform →
+                  </a>
+                </div>
+                <p style="font-size:15px;line-height:1.8;color:#ccc;margin:0 0 20px;">
+                  This step is essential to validate your recruiter profile and connect to the RHC platform. If you have any questions or need support, we are available to help.
+                </p>
+                <p style="font-size:15px;line-height:1.8;color:#ccc;margin:0;">
+                  Best regards,<br>
+                  <strong style="color:#fff;">RHC Team</strong>
+                </p>
+                <div style="background:#161616;border:1px solid #2a2a2a;border-radius:10px;padding:14px 16px;margin-top:24px;font-size:11px;color:#555;line-height:1.7;">
+                  If the button doesn't work, copy this link to your browser:<br>
+                  <span style="color:#5DCAA5;word-break:break-all;">${link}</span>
+                </div>
+              </div>
+              <div style="padding:16px 36px;border-top:1px solid #1e1e1e;font-size:12px;color:#444;text-align:center;">
+                This email was sent by the RHC platform. Please do not reply to this email.
+              </div>
+            </div>`
+        })
+      });
+
+      if(emailRes.ok) {
+        showToast('✓ Convite enviado para ' + email);
+      } else {
+        const err = await emailRes.json();
+        showToast('Link gerado — email falhou: ' + (err.message||'erro'));
+      }
+    } catch(e) {
+      showToast('Link gerado — erro ao enviar email');
+    }
+  } else {
+    try { await navigator.clipboard.writeText(link); showToast('📋 Link copiado!'); } catch(e){}
+  }
+
+  if(btn) { btn.disabled=false; btn.textContent='Enviar convite'; }
+  await loadData();
+}
+
+function copyInviteLink() {
+  const link = document.getElementById('inv-link-text').dataset.url;
+  navigator.clipboard.writeText(link).then(() => showToast('📋 Link copiado!'));
+}
+
+function copyLink(link) {
+  navigator.clipboard.writeText(link).then(() => showToast('📋 Link copiado!'));
+}
+
+// ── ENTER AS COMPANY ──────────────────────────────
+function enterAsCompany(orgId, companyNameEncoded) {
+  const companyName = decodeURIComponent(companyNameEncoded);
+  localStorage.setItem('rhc_superadmin_impersonate', JSON.stringify({
+    orgId, companyName, adminEmail: ADMIN.email, adminName: ADMIN.name
+  }));
+  window.open(`${RECRUITER_PORTAL}?superadmin=1&org=${orgId}`, '_blank');
+}
+
+async function removeCompany(id, nameEncoded) {
+  const name = decodeURIComponent(nameEncoded);
+  document.getElementById('confirm-modal-msg').textContent = `Tem a certeza que pretende remover a empresa "${name}"? Todos os dados associados serão eliminados.`;
+  document.getElementById('confirm-modal-btn').onclick = async () => {
+    closeConfirm();
+    const { error } = await supa.from('organizations').delete().eq('id', id);
+    if(error) { showToast('Erro: ' + error.message); return; }
+    // Remove from local state immediately
+    STATE.companies = STATE.companies.filter(c => c.id !== id);
+    renderCompanies();
+    showToast('✓ Empresa removida');
+    await loadData();
+  };
+  openConfirm();
+}
+
+async function cancelInvite(id) {
+  document.getElementById('confirm-modal-msg').textContent = 'Tem a certeza que pretende cancelar este convite? O link deixará de funcionar.';
+  document.getElementById('confirm-modal-btn').onclick = async () => {
+    closeConfirm();
+    const { error } = await supa.from('company_invites').delete().eq('id', id);
+    if(error) { showToast('Erro: ' + error.message); return; }
+    // Remove from local state immediately
+    STATE.invites = STATE.invites.filter(i => i.id !== id);
+    renderInvites();
+    showToast('✓ Convite cancelado');
+    await loadData();
+  };
+  openConfirm();
+}
+
+function openConfirm()  { document.getElementById('modal-confirm').classList.add('open'); }
+function closeConfirm() { document.getElementById('modal-confirm').classList.remove('open'); }
+async function addAdmin() {
+  const name  = document.getElementById('new-admin-name').value.trim();
+  const email = document.getElementById('new-admin-email').value.trim().toLowerCase();
+  const pass  = document.getElementById('new-admin-pass').value;
+  if(!name||!email||pass.length<8) { showToast('⚠️ Preenche todos os campos (password mín. 8 chars)'); return; }
+  const { error } = await supa.from('superadmins').insert({ name, email, password: pass });
+  if(error) { showToast('Erro: ' + error.message); return; }
+  closeModal('modal-add-admin');
+  ['new-admin-name','new-admin-email','new-admin-pass'].forEach(id => document.getElementById(id).value='');
+  showToast('✓ Admin adicionado');
+  await loadData();
+}
+
+async function removeAdmin(id) {
+  if(!confirm('Remover este super admin?')) return;
+  await supa.from('superadmins').delete().eq('id', id);
+  showToast('Admin removido');
+  await loadData();
+}
+
+// ── UI HELPERS ────────────────────────────────────
+function showTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.target.classList.add('active');
+  if(tab === 'tickets') renderTickets();
+}
+
+let _currentTicket = null;
+
+async function loadTicketsBadge() {
+  try {
+    const { data } = await supa.from('tickets').select('id').eq('status','novo');
+    const count = data?.length || 0;
+    const badge = document.getElementById('tickets-badge');
+    if(badge) { badge.textContent = count; badge.style.display = count > 0 ? 'inline' : 'none'; }
+  } catch(e) {}
+}
+
+async function renderTickets() {
+  const body = document.getElementById('tickets-body');
+  body.innerHTML = '<div style="color:#555;font-size:13px;padding:20px;">A carregar tickets...</div>';
+  try {
+    const { data: tickets } = await supa.from('tickets').select('*').order('created_at', { ascending: false });
+    if(!tickets?.length) { body.innerHTML = '<div style="color:#555;font-size:13px;padding:20px;">Sem tickets de suporte.</div>'; return; }
+
+    const statusColor = { novo: '#e26b6b', em_analise: '#efb84a', fechado: '#5DCAA5' };
+    const statusLabel = { novo: '🔵 Novo', em_analise: '🟡 Em análise', fechado: '✅ Fechado' };
+
+    body.innerHTML = tickets.map(t => `
+      <div onclick="openTicket('${t.id}')" style="background:#111;border:1px solid ${t.status==='novo'?'rgba(226,107,107,.3)':'#1e1e1e'};border-radius:10px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:border-color .15s;" onmouseover="this.style.borderColor='#333'" onmouseout="this.style.borderColor='${t.status==='novo'?'rgba(226,107,107,.3)':'#1e1e1e'}'">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <div style="font-size:13px;font-weight:600;color:#ddd;">${t.name||t.email}</div>
+          <span style="font-size:11px;color:${statusColor[t.status]||'#888'}">${statusLabel[t.status]||t.status}</span>
+        </div>
+        <div style="font-size:12px;color:#efb84a;margin-bottom:4px;">${t.assunto}</div>
+        <div style="font-size:12px;color:#666;">${t.email} · ${t.company||'—'} · ${t.job||'—'}</div>
+        <div style="font-size:11px;color:#444;margin-top:4px;">${new Date(t.created_at).toLocaleDateString('pt-PT')} · ${t.tipo==='formulario'?'⚠️ Formulário':'💬 Dashboard'} · ${t.lang==='en'?'🇬🇧 EN':'🇵🇹 PT'}</div>
+      </div>`).join('');
+  } catch(e) { body.innerHTML = '<div style="color:#e26b6b;">Erro ao carregar tickets.</div>'; }
+}
+
+async function openTicket(id) {
+  const { data: tickets } = await supa.from('tickets').select('*').eq('id', id).single();
+  _currentTicket = tickets;
+  if(!tickets) return;
+
+  // Mark as em_analise if novo
+  if(tickets.status === 'novo') {
+    await supa.from('tickets').update({ status: 'em_analise', updated_at: new Date().toISOString() }).eq('id', id);
+    _currentTicket.status = 'em_analise';
+    loadTicketsBadge();
+  }
+
+  const isFormulario = tickets.tipo === 'formulario';
+  document.getElementById('ticket-modal-title').textContent = `Ticket — ${tickets.name || tickets.email}`;
+  document.getElementById('btn-resend-invite').style.display = isFormulario ? 'block' : 'none';
+  document.getElementById('ticket-reply-text').placeholder = tickets.lang === 'en'
+    ? 'Write your reply to the candidate...'
+    : 'Escreve a tua resposta ao candidato...';
+
+  document.getElementById('ticket-modal-body').innerHTML = `
+    <div style="background:#0d0d0d;border:1px solid #1e1e1e;border-radius:8px;padding:14px;margin-bottom:12px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+        ${[['Candidato', tickets.name||'—'],['Email', tickets.email],['Empresa', tickets.company||'—'],['Vaga', tickets.job||'—'],['Tipo', tickets.tipo==='formulario'?'⚠️ Problema no formulário':'💬 Problema no dashboard'],['Idioma', tickets.lang==='en'?'🇬🇧 English':'🇵🇹 Português']].map(([k,v])=>`
+          <div><div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">${k}</div><div style="font-size:13px;color:#ddd;">${v}</div></div>`).join('')}
+      </div>
+      <div style="font-size:11px;color:#555;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">Assunto</div>
+      <div style="font-size:13px;color:#efb84a;font-weight:600;margin-bottom:10px;">${tickets.assunto}</div>
+      <div style="font-size:11px;color:#555;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">Descrição</div>
+      <div style="font-size:13px;color:#aaa;line-height:1.7;">${tickets.descricao}</div>
+      ${tickets.resposta ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid #1e1e1e;"><div style="font-size:11px;color:#5DCAA5;margin-bottom:4px;">✓ Resposta enviada:</div><div style="font-size:13px;color:#aaa;">${tickets.resposta}</div></div>` : ''}
+    </div>`;
+
+  document.getElementById('modal-ticket').classList.add('open');
+  renderTickets();
+}
+
+async function replyTicket() {
+  if(!_currentTicket) return;
+  const reply = document.getElementById('ticket-reply-text').value.trim();
+  if(!reply) { alert('Escreve uma resposta antes de enviar.'); return; }
+
+  // Save reply and close ticket
+  await supa.from('tickets').update({ resposta: reply, status: 'fechado', updated_at: new Date().toISOString() }).eq('id', _currentTicket.id);
+
+  // Send email with reply via Resend
+  const isEN = _currentTicket.lang === 'en';
+  try {
+    await fetch('https://rhcportal.vercel.app/api/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: 'RHC Suporte <noreply@rhc.pt>',
+        to: [_currentTicket.email],
+        subject: isEN ? `Response to your support request — RHC` : `Resposta ao teu pedido de suporte — RHC`,
+        html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#0e0e0e;color:#f5f3ef;border-radius:16px;overflow:hidden;">
+          <div style="background:#0F6E56;padding:32px 36px;"><div style="font-size:26px;font-weight:700;">RH<span style="color:#5DCAA5;">C</span></div></div>
+          <div style="padding:36px;">
+            <h2 style="color:#5DCAA5;">${isEN ? 'Response to your support request' : 'Resposta ao teu pedido de suporte'}</h2>
+            <p style="color:#aaa;">${isEN ? 'Your request' : 'O teu pedido'}: <strong style="color:#efb84a;">${_currentTicket.assunto}</strong></p>
+            <div style="background:#161616;border:1px solid #2a2a2a;border-radius:10px;padding:16px;margin:16px 0;">
+              <p style="color:#ddd;line-height:1.7;margin:0;">${reply}</p>
+            </div>
+            <p style="color:#ccc;">${isEN ? 'If you need further help, please log in to the candidate portal.' : 'Se precisares de mais ajuda, entra no portal do candidato.'}</p>
+            <p style="color:#ccc;">${isEN ? 'Best regards,' : 'Com os melhores cumprimentos,'}<br><strong style="color:#fff;">RHC Team</strong></p>
+          </div>
+        </div>`
+      })
+    });
+  } catch(e) { console.warn('Email send failed:', e); }
+
+  closeModal('modal-ticket');
+  loadTicketsBadge();
+  renderTickets();
+  alert('Resposta enviada e ticket fechado.');
+}
+
+async function resendInviteTicket() {
+  if(!_currentTicket) return;
+  if(!confirm(`Reenviar convite e apagar o perfil de ${_currentTicket.email}?`)) return;
+
+  // Delete candidate from candidates + applications
+  try {
+    await supa.from('applications').delete().eq('email', _currentTicket.email);
+    await supa.from('candidates').delete().eq('email', _currentTicket.email);
+    await supa.from('password_resets').delete().eq('email', _currentTicket.email);
+  } catch(e) { console.warn('Delete failed:', e); }
+
+  // Get job invite link
+  let inviteLink = `https://candidatos.rhc.pt?company=${encodeURIComponent(_currentTicket.company||'')}&job=${encodeURIComponent(_currentTicket.job||'')}`;
+  if(_currentTicket.org_id) {
+    try {
+      const { data: jobs } = await supa.from('jobs').select('id,ideal_profile,salary_min,salary_max').eq('org_id', _currentTicket.org_id).ilike('title', _currentTicket.job||'').limit(1);
+      if(jobs?.[0]) {
+        inviteLink += `&job_id=${jobs[0].id}&profile=${encodeURIComponent(jobs[0].ideal_profile||'')}`;
+        if(jobs[0].salary_min) inviteLink += `&salaryMin=${jobs[0].salary_min}`;
+        if(jobs[0].salary_max) inviteLink += `&salaryMax=${jobs[0].salary_max}`;
+      }
+    } catch(e) {}
+  }
+  if(_currentTicket.lang === 'en') inviteLink += '&lang=en';
+
+  const isEN = _currentTicket.lang === 'en';
+  const firstName = (_currentTicket.name||'Candidate').split(' ')[0];
+
+  // Send new invite email
+  await fetch('https://rhcportal.vercel.app/api/send-email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: 'RHC Recrutamento <noreply@rhc.pt>',
+      to: [_currentTicket.email],
+      subject: isEN ? `New application link — ${_currentTicket.job}` : `Novo link de candidatura — ${_currentTicket.job}`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#0e0e0e;color:#f5f3ef;border-radius:16px;overflow:hidden;">
+        <div style="background:#0F6E56;padding:32px 36px;"><div style="font-size:26px;font-weight:700;">RH<span style="color:#5DCAA5;">C</span></div></div>
+        <div style="padding:36px;">
+          <h2 style="color:#5DCAA5;">${isEN?`Hello, ${firstName}!`:`Olá, ${firstName}!`}</h2>
+          <p style="color:#ccc;line-height:1.7;">${isEN?`We have reset your application for the position of <strong style="color:#fff;">${_currentTicket.job}</strong>. Please click the link below to start a new application.`:`Fizemos o reset da tua candidatura para a vaga de <strong style="color:#fff;">${_currentTicket.job}</strong>. Clica no link abaixo para iniciar uma nova candidatura.`}</p>
+          <div style="text-align:center;margin:28px 0;">
+            <a href="${inviteLink}" style="background:#5DCAA5;color:#0e0e0e;text-decoration:none;padding:14px 36px;border-radius:10px;font-weight:700;font-size:15px;display:inline-block;">${isEN?'Start new application →':'Iniciar nova candidatura →'}</a>
+          </div>
+          <p style="color:#ccc;">${isEN?'Best regards,':'Com os melhores cumprimentos,'}<br><strong style="color:#fff;">RHC Team</strong></p>
+        </div>
+      </div>`
+    })
+  });
+
+  // Close ticket
+  await supa.from('tickets').update({ status: 'fechado', resposta: 'Convite reenviado e perfil apagado.', updated_at: new Date().toISOString() }).eq('id', _currentTicket.id);
+
+  closeModal('modal-ticket');
+  loadTicketsBadge();
+  renderTickets();
+  alert(isEN ? 'Invite resent and profile deleted.' : 'Convite reenviado e perfil apagado.');
+}
+
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  document.getElementById('inv-link-box').style.display = 'none';
+  document.getElementById('inv-company').value = '';
+  document.getElementById('inv-email').value = '';
+}
+
+let _toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── BOOT ──────────────────────────────────────────
+(function() {
+  const saved = localStorage.getItem(ADMIN_SESSION_KEY);
+  if(saved) {
+    try {
+      ADMIN = JSON.parse(saved);
+      enterAdmin();
+    } catch(e) { localStorage.removeItem(ADMIN_SESSION_KEY); }
+  }
+})();
+</script>
+</body>
+</html>
