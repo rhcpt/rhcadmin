@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RHC Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  :root {
+    --ink:    #080808;
+    --ink2:   #111111;
+    --ink3:   #1a1a1a;
+    --border: #222222;
+    --border2:#2a2a2a;
+    --paper:  #f5f3ef;
+    --muted:  #888888;
+    --accent: #00e5a0;
+    --accent2:#00b87a;
+    --red:    #e26b6b;
+    --font-head: 'Syne', sans-serif;
+    --font-sans: 'Inter', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--ink); color: var(--paper); font-family: var(--font-sans); min-height: 100vh; }
+
+  /* ── AUTH ── */
+  #auth-page {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: var(--ink);
+  }
+  .auth-box {
+    width: 380px; padding: 48px 40px;
+    background: var(--ink2); border: 1px solid var(--border); border-radius: 20px;
+  }
+  .auth-logo { font-family: var(--font-head); font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+  .auth-logo span { color: var(--accent); }
+  .auth-badge {
+    display: inline-block; background: rgba(0,229,160,.1); color: var(--accent);
+    font-size: 10px; font-weight: 600; letter-spacing: 1px; padding: 3px 10px;
+    border-radius: 20px; border: 1px solid rgba(0,229,160,.2); margin-bottom: 32px;
+  }
+  .auth-title { font-family: var(--font-head); font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+  .auth-sub { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
+  .form-group { margin-bottom: 16px; }
+  .form-label { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+  .form-input {
+    width: 100%; background: var(--ink3); border: 1px solid var(--border2);
+    border-radius: 10px; padding: 12px 14px; font-size: 14px; color: var(--paper);
+    font-family: var(--font-sans); transition: border-color .2s;
+  }
+  .form-input:focus { outline: none; border-color: var(--accent); }
+  .btn-primary {
+    width: 100%; background: var(--accent); color: var(--ink); border: none;
+    border-radius: 10px; padding: 13px; font-size: 14px; font-weight: 700;
+    font-family: var(--font-head); cursor: pointer; transition: all .2s; margin-top: 8px;
+  }
+  .btn-primary:hover { background: var(--accent2); }
+  .error-msg { background: rgba(226,107,107,.1); border: 1px solid rgba(226,107,107,.3); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: var(--red); margin-bottom: 16px; display: none; }
+
+  /* ── MAIN ── */
+  #main-page { display: none; min-height: 100vh; }
+
+  /* NAV */
+  .nav {
+    background: var(--ink2); border-bottom: 1px solid var(--border);
+    padding: 0 32px; display: flex; align-items: center; height: 60px; gap: 32px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .nav-logo { font-family: var(--font-head); font-size: 18px; font-weight: 800; }
+  .nav-logo span { color: var(--accent); }
+  .nav-badge {
+    background: rgba(0,229,160,.1); color: var(--accent); font-size: 10px;
+    font-weight: 600; letter-spacing: 1px; padding: 3px 8px; border-radius: 20px;
+    border: 1px solid rgba(0,229,160,.2);
+  }
+  .nav-tabs { display: flex; gap: 4px; flex: 1; }
+  .nav-tab {
+    padding: 8px 16px; border-radius: 8px; font-size: 13px; color: var(--muted);
+    cursor: pointer; transition: all .15s; font-family: var(--font-sans); border: none; background: none;
+  }
+  .nav-tab:hover { color: var(--paper); background: var(--ink3); }
+  .nav-tab.active { color: var(--paper); background: var(--ink3); }
+  .nav-right { display: flex; align-items: center; gap: 12px; }
+  .nav-user { font-size: 13px; color: var(--muted); }
+  .btn-logout {
+    background: none; border: 1px solid var(--border2); border-radius: 8px;
+    padding: 7px 14px; font-size: 12px; color: var(--muted); cursor: pointer;
+    font-family: var(--font-sans); transition: all .15s;
+  }
+  .btn-logout:hover { color: var(--red); border-color: var(--red); }
+
+  /* CONTENT */
+  .content { max-width: 1100px; margin: 0 auto; padding: 40px 32px; }
+
+  /* TABS */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* PAGE HEADER */
+  .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 32px; }
+  .page-title { font-family: var(--font-head); font-size: 28px; font-weight: 800; }
+  .page-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+  /* STATS */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+  .stat-card {
+    background: var(--ink2); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px 22px;
+  }
+  .stat-val { font-family: var(--font-head); font-size: 32px; font-weight: 800; color: var(--accent); }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* TABLE */
+  .table-wrap { background: var(--ink2); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .table-head {
+    display: grid; padding: 12px 20px;
+    background: var(--ink3); font-size: 11px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid var(--border);
+  }
+  .table-row {
+    display: grid; padding: 14px 20px;
+    border-bottom: 1px solid var(--border); align-items: center;
+    transition: background .15s;
+  }
+  .table-row:last-child { border-bottom: none; }
+  .table-row:hover { background: var(--ink3); }
+  .companies-grid { grid-template-columns: 2fr 1.5fr 1fr 1fr 120px; }
+  .invites-grid   { grid-template-columns: 2fr 1.5fr 1fr 1fr 120px; }
+
+  .company-avatar {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: rgba(0,229,160,.1); border: 1px solid rgba(0,229,160,.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; color: var(--accent); font-family: var(--font-head);
+    flex-shrink: 0;
+  }
+  .company-info { display: flex; align-items: center; gap: 12px; }
+
+  .status-pill {
+    display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500;
+  }
+  .pill-active   { background: rgba(0,229,160,.1); color: var(--accent); }
+  .pill-pending  { background: rgba(239,184,74,.1); color: #efb84a; }
+  .pill-used     { background: rgba(100,181,246,.1); color: #64b5f6; }
+
+  .action-btn {
+    background: none; border: 1px solid var(--border2); border-radius: 6px;
+    padding: 5px 10px; font-size: 11px; color: var(--muted); cursor: pointer;
+    transition: all .15s; font-family: var(--font-sans); white-space: nowrap;
+  }
+  .action-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .action-btn.danger:hover { border-color: var(--red); color: var(--red); }
+  .action-btn.enter:hover { background: rgba(0,229,160,.1); }
+
+  /* MODAL */
+  .modal-bg {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75);
+    z-index: 200; align-items: center; justify-content: center;
+  }
+  .modal-bg.open { display: flex; }
+  .modal {
+    background: var(--ink2); border: 1px solid var(--border); border-radius: 16px;
+    padding: 28px 32px; width: 480px; max-width: 95vw;
+  }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+  .modal-title { font-family: var(--font-head); font-size: 18px; font-weight: 700; }
+  .modal-close { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+  .modal-close:hover { color: var(--paper); background: var(--ink3); }
+
+  /* LINK BOX */
+  .link-box {
+    background: var(--ink3); border: 1px solid rgba(0,229,160,.2); border-radius: 10px;
+    padding: 14px 16px; margin-top: 16px; display: none;
+  }
+  .link-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+  .link-text { font-size: 12px; color: var(--accent); word-break: break-all; line-height: 1.6; margin-bottom: 12px; }
+  .btn-copy {
+    width: 100%; background: rgba(0,229,160,.1); border: 1px solid rgba(0,229,160,.3);
+    border-radius: 8px; color: var(--accent); font-size: 13px; font-weight: 600;
+    padding: 10px; cursor: pointer; font-family: var(--font-head); transition: all .2s;
+  }
+  .btn-copy:hover { background: rgba(0,229,160,.2); }
+
+  /* TOAST */
+  #toast {
+    position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--ink3); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 20px; font-size: 13px; color: var(--paper); z-index: 999;
+    transition: transform .3s, opacity .3s; pointer-events: none; white-space: nowrap;
+    box-shadow: 0 6px 24px rgba(0,0,0,.4);
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+  #toast.success {
+    background: rgba(93,202,165,.1);
+    border-color: rgba(93,202,165,.3);
+    color: #5DCAA5;
+    font-weight: 500;
+    box-shadow: 0 6px 24px rgba(0,0,0,.3);
+  }
+
+  /* EMPTY */
+  .empty { padding: 60px 20px; text-align: center; color: var(--muted); font-size: 14px; }
+
+  /* IMPERSONATE OVERLAY */
+  #imp-bar {
+    display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+    background: var(--accent); color: var(--ink); padding: 8px 20px;
+    font-size: 13px; font-weight: 600; font-family: var(--font-head);
+    display: none; align-items: center; justify-content: space-between;
+  }
+  #imp-bar button {
+    background: rgba(0,0,0,.15); border: none; border-radius: 6px;
+    padding: 5px 14px; font-size: 12px; font-weight: 700; cursor: pointer;
+    font-family: var(--font-head);
+  }
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-page">
+  <div class="auth-box">
+    <div class="auth-logo">RH<span>C</span></div>
+    <div class="auth-badge">ADMIN</div>
+    <div class="auth-title">Acesso restrito</div>
+    <div class="auth-sub">Apenas membros da equipa RHC</div>
+    <div class="error-msg" id="auth-error"></div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input class="form-input" id="login-email" type="email" placeholder="exemplo@rhc.pt" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <div style="position:relative;">
+        <input class="form-input" id="login-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" style="padding-right:42px;" />
+        <button type="button" onclick="toggleAdminPass()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#555;padding:4px;">
+          <svg id="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="doLogin()">Entrar →</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main-page">
+  <nav class="nav">
+    <div class="nav-logo">RH<span>C</span></div>
+    <div class="nav-badge">ADMIN</div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="showTab('companies')">Empresas</button>
+      <button class="nav-tab" onclick="showTab('invites')">Convites</button>
+      <button class="nav-tab" onclick="showTab('admins')">Admins</button>
+      <button class="nav-tab" id="tab-tickets-btn" onclick="showTab('tickets')">Tickets <span id="tickets-badge" style="display:none;background:#e26b6b;color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;margin-left:4px;">0</span></button>
+    </div>
+    <div class="nav-right">
+      <span id="role-badge"></span>
+      <span class="nav-user" id="nav-user-name"></span>
+      <button class="btn-logout" onclick="doLogout()">Sair</button>
+    </div>
+  </nav>
+
+  <div class="content">
+
+    <!-- TAB: COMPANIES -->
+    <div class="tab-panel active" id="tab-companies">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Empresas</div>
+          <div class="page-sub" id="companies-sub">A carregar...</div>
+        </div>
+        <button class="btn-primary invite-btn" style="width:auto;padding:11px 24px;margin-top:0;" onclick="openModal('modal-invite')">+ Enviar convite</button>
+      </div>
+
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);">
+        <div class="stat-card">
+          <div class="stat-val" id="stat-total">0</div>
+          <div class="stat-label">Empresas activas</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" id="stat-candidates">0</div>
+          <div class="stat-label">Total candidatos</div>
+        </div>
+        <div class="stat-card" style="cursor:pointer;" onclick="document.querySelector('[onclick*=\"showTab(\'tickets\')\"]').click()" title="Ver tickets">
+          <div class="stat-val" id="stat-tickets-open">0</div>
+          <div class="stat-label">Tickets abertos</div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-head companies-grid">
+          <div>Empresa</div>
+          <div>Email</div>
+          <div>Candidatos</div>
+          <div>Estado</div>
+          <div>Ações</div>
+        </div>
+        <div id="companies-body"></div>
+      </div>
+    </div>
+
+    <!-- TAB: INVITES -->
+    <div class="tab-panel" id="tab-invites">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Convites</div>
+          <div class="page-sub">Histórico de todos os convites enviados</div>
+        </div>
+        <button class="btn-primary invite-btn" style="width:auto;padding:11px 24px;margin-top:0;" onclick="openModal('modal-invite')">+ Enviar convite</button>
+      </div>
+      <div class="table-wrap">
+        <div class="table-head invites-grid">
+          <div>Empresa</div>
+          <div>Email</div>
+          <div>Criado em</div>
+          <div>Estado</div>
+          <div>Link</div>
+        </div>
+        <div id="invites-body"></div>
+      </div>
+    </div>
+
+    <!-- TAB: ADMINS -->
+    <div class="tab-panel" id="tab-admins">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Acessos</div>
+          <div class="page-sub">Membros da equipa RHC com acesso ao painel</div>
+        </div>
+        <button class="btn-primary" style="width:auto;padding:11px 24px;margin-top:0;" onclick="openModal('modal-add-admin')">+ Adicionar acesso</button>
+      </div>
+      <div class="table-wrap">
+        <div class="table-head" style="grid-template-columns:2fr 2fr 1fr 1fr;">
+          <div>Nome</div>
+          <div>Email</div>
+          <div>Tipo</div>
+          <div>Ações</div>
+        </div>
+        <div id="admins-body"></div>
+      </div>
+    </div>
+
+    <!-- TICKETS PAGE -->
+    <div class="tab-panel" id="tab-tickets">
+      <div class="page-header">
+        <div>
+          <div class="page-title" style="text-transform:none;letter-spacing:0;">Tickets de Suporte</div>
+          <div class="page-sub">Pedidos de ajuda dos candidatos</div>
+        </div>
+      </div>
+      <div id="tickets-body" style="margin-top:16px;"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL: TICKET DETAIL -->
+<div class="modal-bg" id="modal-ticket" onclick="void(0)">
+  <div class="modal" style="max-width:760px;width:92vw;" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title" id="ticket-modal-title">Ticket de Suporte</div>
+      <button class="modal-close" onclick="closeModal('modal-ticket')">×</button>
+    </div>
+    <div id="ticket-modal-body"></div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid #1e1e1e;">
+      <textarea id="ticket-reply-text" placeholder="Escreve a tua resposta ao candidato..." style="width:100%;background:#0d0d0d;border:1px solid #2a2a2a;border-radius:8px;color:#ddd;font-size:13px;padding:12px;min-height:80px;resize:vertical;font-family:inherit;box-sizing:border-box;"></textarea>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;" class="modal-footer">
+        <button onclick="replyTicket()" style="flex:2;min-width:120px;padding:11px;background:var(--accent);border:none;border-radius:8px;color:#0e0e0e;font-size:13px;font-weight:700;cursor:pointer;">✓ Responder</button>
+        <button onclick="resendInviteTicket()" id="btn-resend-invite" style="flex:1;padding:11px;background:rgba(239,184,74,.1);border:1px solid rgba(239,184,74,.3);border-radius:8px;color:#efb84a;font-size:13px;cursor:pointer;">📧 Reenviar convite</button>
+        <button onclick="closeRecruiterTicket()" id="btn-close-recruiter-ticket" style="display:none;flex:1;padding:11px;background:rgba(93,202,165,.1);border:1px solid rgba(93,202,165,.3);border-radius:8px;color:#5DCAA5;font-size:13px;cursor:pointer;">✓ Fechar ticket</button>
+        <button onclick="closeModal('modal-ticket')" style="padding:11px 16px;background:none;border:1px solid #2a2a2a;border-radius:8px;color:#888;font-size:13px;cursor:pointer;">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: INVITE -->
+<div class="modal-bg" id="modal-invite">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Convidar empresa</div>
+      <button class="modal-close" onclick="closeModal('modal-invite')">×</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nome da empresa</label>
+      <input class="form-input" id="inv-company" placeholder="ex: Empresa Exemplo Lda" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email do recruiter</label>
+      <input class="form-input" id="inv-email" type="email" placeholder="recruiter@empresa.pt" />
+    </div>
+    <div class="form-group" style="margin-bottom:16px;">
+      <label class="form-label" style="font-size:12px;color:#666;display:block;margin-bottom:6px;">Idioma do portal</label>
+      <select id="inv-lang" class="form-select" style="width:100%;background:#0d0d0d;border:1px solid #2a2a2a;border-radius:8px;color:#ddd;font-size:13px;padding:10px 12px;">
+        <option value="pt">🇵🇹 Português</option>
+        <option value="en">🇬🇧 English</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="generateInvite()">Enviar convite</button>
+    <div class="link-box" id="inv-link-box">
+      <div class="link-label">Link de convite</div>
+      <div class="link-text" id="inv-link-text"></div>
+      <button class="btn-copy" onclick="copyInviteLink()">📋 Copiar link</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ADD ADMIN -->
+<div class="modal-bg" id="modal-add-admin">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Adicionar acesso</div>
+      <button class="modal-close" onclick="closeModal('modal-add-admin')">×</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nome</label>
+      <input class="form-input" id="new-admin-name" placeholder="Nome completo" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input class="form-input" id="new-admin-email" type="email" placeholder="email@rhc.pt" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input class="form-input" id="new-admin-pass" type="password" placeholder="Mínimo 8 caracteres" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Tipo de acesso</label>
+      <select class="form-input" id="new-admin-role">
+        <option value="suporte" selected>Suporte (acesso limitado)</option>
+        <option value="admin">Admin (acesso total)</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="addAdmin()">Adicionar</button>
+  </div>
+</div>
+
+<!-- MODAL: CONFIRM -->
+<div class="modal-bg" id="modal-confirm">
+  <div class="modal" style="width:420px;">
+    <div class="modal-header">
+      <div class="modal-title">⚠️ Confirmar acção</div>
+    </div>
+    <p id="confirm-modal-msg" style="font-size:14px;color:#aaa;line-height:1.6;margin-bottom:24px;"></p>
+    <div style="display:flex;gap:10px;">
+      <button id="confirm-modal-btn" class="btn-primary" style="flex:1;background:#e26b6b;">Sim, confirmar</button>
+      <button onclick="closeConfirm()" style="flex:1;padding:11px;background:none;border:1px solid #2a2a2a;border-radius:8px;color:#888;font-size:13px;cursor:pointer;font-family:var(--font-sans);">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+const SUPA_URL = 'https://sgecgsnxljohhfbftevg.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNnZWNnc254bGpvaGhmYmZ0ZXZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3NzMzNjQsImV4cCI6MjA5MjM0OTM2NH0.Igv5qrLk8NwsheStNv7VY4cvdCO-svEGx6S89OZubps';
+const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+const RECRUITER_PORTAL = 'https://portal.rhc.pt';
+const CANDIDATE_PORTAL = 'https://rhccandidatos.vercel.app';
+const ADMIN_SESSION_KEY = 'rhc_admin_session';
+
+// Email template builder — keeps every admin-sent email visually identical to those
+// from the recruiter and candidate portals.
+function buildEmailHTML(body) {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f3f4f6;padding:24px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+    <tr><td align="center">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background:#ffffff;border-radius:8px;overflow:hidden;">
+        <tr><td style="padding:32px 40px 20px 40px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+            <td style="background:#0a0a0f;border-radius:50%;width:44px;height:44px;text-align:center;vertical-align:middle;font-size:16px;font-weight:800;color:#ffffff;letter-spacing:-0.02em;line-height:44px;">RH<span style="color:#5DCAA5;">C</span></td>
+          </tr></table>
+        </td></tr>
+        <tr><td style="padding:0 40px;"><div style="height:2px;background:#5DCAA5;width:40px;line-height:0;font-size:0;">&nbsp;</div></td></tr>
+        <tr><td style="padding:28px 40px 32px 40px;color:#1f2937;font-size:15px;line-height:1.65;">${body}</td></tr>
+        <tr><td style="padding:0 40px;"><div style="height:1px;background:#e5e7eb;line-height:0;font-size:0;">&nbsp;</div></td></tr>
+        <tr><td style="padding:20px 40px 32px 40px;color:#9ca3af;font-size:12px;line-height:1.7;">
+          <p style="margin:0 0 4px 0;"><strong style="color:#6b7280;">RHC</strong></p>
+          <p style="margin:0 0 12px 0;"><a href="https://rhc.pt" style="color:#9ca3af;text-decoration:none;">rhc.pt</a> &middot; <a href="mailto:hello@rhc.pt" style="color:#9ca3af;text-decoration:none;">hello@rhc.pt</a></p>
+          <p style="margin:0;color:#b3b8c4;font-size:11px;">This is an automated message. Please do not reply.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>`;
+}
+
+// 'admin' = full access (default for legacy rows without a role column).
+// 'suporte' = tickets only; view companies but cannot add/remove; no admin management page.
+let CURRENT_ROLE = 'admin';
+let ADMIN = null;
+let STATE = { companies: [], invites: [], admins: [] };
+
+function toggleAdminPass() {
+  const input = document.getElementById('login-pass');
+  const icon  = document.getElementById('eye-icon');
+  if(input.type === 'password') {
+    input.type = 'text';
+    icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22"/>';
+  } else {
+    input.type = 'password';
+    icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  }
+}
+
+// ── AUTH ──────────────────────────────────────────
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  const pass  = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('auth-error');
+  errEl.style.display = 'none';
+
+  if(!email || !pass) { showAuthErr('Preenche email e password.'); return; }
+
+  try {
+    const { data, error } = await supa
+      .from('superadmins')
+      .select('*')
+      .eq('email', email)
+      .eq('password', pass)
+      .maybeSingle();
+
+    if(error) { showAuthErr('Erro de ligação: ' + error.message); return; }
+    if(!data)  { showAuthErr('Email ou password incorrectos.'); return; }
+
+    ADMIN = data;
+    localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(data));
+    enterAdmin();
+  } catch(e) {
+    showAuthErr('Erro de ligação. Tenta novamente.');
+  }
+}
+
+function showAuthErr(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+function doLogout() {
+  localStorage.removeItem(ADMIN_SESSION_KEY);
+  ADMIN = null;
+  document.getElementById('main-page').style.display = 'none';
+  document.getElementById('auth-page').style.display = 'flex';
+}
+
+async function enterAdmin() {
+  document.getElementById('auth-page').style.display = 'none';
+  document.getElementById('main-page').style.display = 'block';
+  document.getElementById('nav-user-name').textContent = ADMIN.name;
+  // Pick up the role from the row; default to 'admin' so legacy users (no role column)
+  // keep their full access — this matches the SQL DEFAULT 'admin' as well.
+  CURRENT_ROLE = (ADMIN.role || 'admin').toLowerCase();
+  applyRoleUI();
+  await loadData();
+}
+
+// Hide/show navigation items + buttons based on CURRENT_ROLE.
+// Suporte: tickets only — no Admins page, no add/remove buttons.
+function applyRoleUI() {
+  const isSupport = CURRENT_ROLE === 'suporte';
+  // Top nav "Admins" tab — hide it for support
+  document.querySelectorAll('.nav-tab').forEach(el => {
+    const onclick = el.getAttribute('onclick') || '';
+    if(onclick.includes("'admins'")) {
+      el.style.display = isSupport ? 'none' : '';
+    }
+  });
+  // Hide "+ Enviar convite" buttons for support (they can't add companies)
+  document.querySelectorAll('.invite-btn').forEach(el => {
+    el.style.display = isSupport ? 'none' : '';
+  });
+  // If support lands on the admins tab somehow, bounce them to tickets
+  if(isSupport) {
+    const adminsPanel = document.getElementById('panel-admins');
+    if(adminsPanel && adminsPanel.style.display !== 'none' && typeof showTab === 'function') {
+      showTab('tickets');
+    }
+  }
+  // Role badge next to the user name
+  const badge = document.getElementById('role-badge');
+  if(badge) {
+    badge.textContent = isSupport ? 'SUPORTE' : 'ADMIN';
+    badge.style.background = 'rgba(93,202,165,.12)';
+    badge.style.color = '#5DCAA5';
+    badge.style.border = '1px solid rgba(93,202,165,.35)';
+    badge.style.padding = '2px 8px';
+    badge.style.borderRadius = '6px';
+    badge.style.fontSize = '10px';
+    badge.style.fontWeight = '700';
+    badge.style.letterSpacing = '.5px';
+    badge.style.marginRight = '8px';
+  }
+}
+
+// ── DATA ──────────────────────────────────────────
+async function loadData() {
+  try {
+    const orgsRes    = await supa.from('organizations').select('*').order('created_at', { ascending: false });
+    const candsRes   = await supa.from('candidates').select('org_id');
+    const invitesRes = await supa.from('company_invites').select('*').order('created_at', { ascending: false });
+    const adminsRes  = await supa.from('superadmins').select('*').order('created_at', { ascending: false });
+
+    // Show any errors visibly on screen
+    const errors = [];
+    if(orgsRes.error)    errors.push('organizations: ' + orgsRes.error.message);
+    if(candsRes.error)   errors.push('candidates: ' + candsRes.error.message);
+    if(invitesRes.error) errors.push('company_invites: ' + invitesRes.error.message);
+    if(adminsRes.error)  errors.push('superadmins: ' + adminsRes.error.message);
+
+    if(errors.length) {
+      document.getElementById('companies-sub').textContent = 'ERRO: ' + errors.join(' | ');
+      showToast('⚠️ Erro: ' + errors[0]);
+      return;
+    }
+
+    const candCount = {};
+    (candsRes.data||[]).forEach(c => { candCount[c.org_id] = (candCount[c.org_id]||0) + 1; });
+
+    STATE.companies = (orgsRes.data||[]).map(o => ({ ...o, candidateCount: candCount[o.id] || 0 }));
+    STATE.invites   = invitesRes.data || [];
+    STATE.admins    = adminsRes.data  || [];
+
+    document.getElementById('stat-total').textContent           = STATE.companies.length;
+    document.getElementById('stat-candidates').textContent      = Object.values(candCount).reduce((a,b)=>a+b,0);
+    document.getElementById('companies-sub').textContent        = `${STATE.companies.length} empresa${STATE.companies.length!==1?'s':''} registada${STATE.companies.length!==1?'s':''}`;
+
+    renderCompanies();
+    renderInvites();
+    renderAdmins();
+    loadTicketsBadge();
+  } catch(e) {
+    document.getElementById('companies-sub').textContent = 'ERRO GERAL: ' + e.message;
+    showToast('⚠️ ' + e.message);
+  }
+}
+
+// ── RENDER ────────────────────────────────────────
+function initials(name) {
+  if(!name) return '?';
+  return name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+}
+
+function renderCompanies() {
+  const body = document.getElementById('companies-body');
+  if(!STATE.companies.length) {
+    body.innerHTML = '<div class="empty">Nenhuma empresa registada ainda.<br>Envia o primeiro convite para começar.</div>';
+    return;
+  }
+  // Build a quick lookup of company_name → most recent invite email,
+  // so we can show the email the invite was sent to instead of "—".
+  const inviteEmailByCompany = {};
+  (STATE.invites || []).forEach(inv => {
+    if(!inv.company_name || !inv.email) return;
+    const key = inv.company_name.trim().toLowerCase();
+    const existing = inviteEmailByCompany[key];
+    // keep the most recent (invites are sorted desc by created_at on load)
+    if(!existing) inviteEmailByCompany[key] = inv.email;
+  });
+
+  body.innerHTML = STATE.companies.map(c => {
+    const inviteEmail = inviteEmailByCompany[(c.name||'').trim().toLowerCase()] || c.email || '—';
+    return `
+    <div class="table-row companies-grid">
+      <div class="company-info">
+        <div class="company-avatar">${initials(c.name)}</div>
+        <div>
+          <div style="font-size:13px;color:#ddd;font-weight:500;">${c.name||'—'}</div>
+        </div>
+      </div>
+      <div style="font-size:13px;color:#aaa;">${inviteEmail}</div>
+      <div style="font-size:13px;color:#aaa;">${c.candidateCount}</div>
+      <div><span class="status-pill pill-active">Activa</span></div>
+      <div style="display:flex;gap:6px;">
+        <button class="action-btn enter" onclick="enterAsCompany('${c.id}','${encodeURIComponent(c.name||'')}')">Entrar</button>
+        ${CURRENT_ROLE === 'admin' ? `<button class="action-btn danger" onclick="removeCompany('${c.id}','${encodeURIComponent(c.name||'')}')">Remover</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderInvites() {
+  const body = document.getElementById('invites-body');
+  if(!STATE.invites.length) {
+    body.innerHTML = '<div class="empty">Nenhum convite criado ainda.</div>';
+    return;
+  }
+  body.innerHTML = STATE.invites.map(inv => {
+    const date = new Date(inv.created_at).toLocaleDateString('pt-PT');
+    const link = `${RECRUITER_PORTAL}?invite=${inv.token}&company=${encodeURIComponent(inv.company_name)}`;
+    return `
+    <div class="table-row invites-grid">
+      <div style="font-size:13px;color:#ddd;font-weight:500;">${inv.company_name}</div>
+      <div style="font-size:13px;color:#aaa;">${inv.email||'—'}</div>
+      <div style="font-size:12px;color:#555;">${date}</div>
+      <div><span class="status-pill ${inv.used?'pill-used':'pill-pending'}">${inv.used?'Usado':'Pendente'}</span></div>
+      <div style="display:flex;gap:5px;">
+        <button class="action-btn" onclick="copyLink('${link}')">📋 Link</button>
+        ${!inv.used ? `<button class="action-btn danger" onclick="cancelInvite('${inv.id}')">Cancelar</button>` : ''}
+      </div>
+    </div>`; }).join('');
+}
+
+function renderAdmins() {
+  const body = document.getElementById('admins-body');
+  body.innerHTML = STATE.admins.map(a => {
+    const role = (a.role || 'admin').toLowerCase();
+    const isAdmin = role === 'admin';
+    const roleLabel = isAdmin ? 'ADMIN' : 'SUPORTE';
+    // Both badges in green but the support one is slightly lighter to keep them distinguishable
+    const badgeBg = isAdmin ? 'rgba(93,202,165,.20)' : 'rgba(93,202,165,.10)';
+    return `
+    <div class="table-row" style="grid-template-columns:2fr 2fr 1fr 1fr;">
+      <div style="font-size:13px;color:#ddd;">${a.name}</div>
+      <div style="font-size:13px;color:#aaa;">${a.email}</div>
+      <div><span style="background:${badgeBg};color:#5DCAA5;border:1px solid rgba(93,202,165,.35);font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 9px;border-radius:6px;">${roleLabel}</span></div>
+      <div>
+        ${a.email !== ADMIN.email ? `<button class="action-btn danger" onclick="removeAdmin('${a.id}','${encodeURIComponent(a.name||'')}')">Remover</button>` : '<span style="font-size:11px;color:#555;">Tu</span>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── INVITE ────────────────────────────────────────
+async function generateInvite() {
+  const company = document.getElementById('inv-company').value.trim();
+  const email   = document.getElementById('inv-email').value.trim();
+  if(!company) { showToast('⚠️ Insere o nome da empresa'); return; }
+
+  const btn = document.querySelector('#modal-invite .btn-primary');
+  if(btn) { btn.disabled = true; btn.textContent = 'A enviar...'; }
+
+  const token = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+  const { error } = await supa.from('company_invites').insert({
+    company_name: company, email: email||null,
+    token, created_by: ADMIN.email
+  });
+  if(error) { showToast('Erro ao criar convite'); if(btn){btn.disabled=false;btn.textContent='Enviar convite';} return; }
+
+  const inviteLang = document.getElementById('inv-lang')?.value || 'pt';
+  const link = `${RECRUITER_PORTAL}?invite=${token}&company=${encodeURIComponent(company)}${email ? '&email=' + encodeURIComponent(email) : ''}&lang=${inviteLang}`;
+  document.getElementById('inv-link-text').textContent = link;
+  document.getElementById('inv-link-text').dataset.url = link;
+  document.getElementById('inv-link-box').style.display = 'block';
+
+  // Send email via Resend if email provided
+  if(email) {
+    try {
+      const emailRes = await fetch('https://rhcportal.vercel.app/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: 'RHC Team <convites@rhc.pt>',
+          to: [email],
+          subject: 'Connect to RHC',
+          html: buildEmailHTML(`
+            <p style="margin:0 0 20px 0;">Hi,</p>
+            <p style="margin:0 0 18px 0;">Thank you for registering on the RHC platform.</p>
+            <p style="margin:0 0 24px 0;">To start using all features and access available opportunities, please complete your account setup by clicking the button below.</p>
+            <p style="margin:0 0 24px 0;text-align:center;"><a href="${link}" style="background:#0a0a0f;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:6px;font-weight:600;font-size:14px;display:inline-block;">Access RHC Platform</a></p>
+            <p style="margin:0 0 28px 0;font-size:13px;color:#6b7280;">If you have any questions or need support, we're here to help. Just reply to this thread or email <a href="mailto:hello@rhc.pt" style="color:#0d8067;text-decoration:none;">hello@rhc.pt</a>.</p>
+            <p style="margin:0;">Best regards,<br><strong>The RHC Team</strong></p>
+          `)
+        })
+      });
+
+      if(emailRes.ok) {
+        showToast('✓ Convite enviado para ' + email);
+      } else {
+        const err = await emailRes.json();
+        showToast('Link gerado — email falhou: ' + (err.message||'erro'));
+      }
+    } catch(e) {
+      showToast('Link gerado — erro ao enviar email');
+    }
+  } else {
+    try { await navigator.clipboard.writeText(link); showToast('📋 Link copiado!'); } catch(e){}
+  }
+
+  if(btn) { btn.disabled=false; btn.textContent='Enviar convite'; }
+  await loadData();
+}
+
+function copyInviteLink() {
+  const link = document.getElementById('inv-link-text').dataset.url;
+  navigator.clipboard.writeText(link).then(() => showToast('📋 Link copiado!'));
+}
+
+function copyLink(link) {
+  navigator.clipboard.writeText(link).then(() => showToast('📋 Link copiado!'));
+}
+
+// ── ENTER AS COMPANY ──────────────────────────────
+function enterAsCompany(orgId, companyNameEncoded) {
+  const companyName = decodeURIComponent(companyNameEncoded);
+  localStorage.setItem('rhc_superadmin_impersonate', JSON.stringify({
+    orgId, companyName, adminEmail: ADMIN.email, adminName: ADMIN.name
+  }));
+  window.open(`${RECRUITER_PORTAL}?superadmin=1&org=${orgId}`, '_blank');
+}
+
+async function removeCompany(id, nameEncoded) {
+  if(CURRENT_ROLE !== 'admin') { showToast('⚠️ Sem permissões para remover empresas'); return; }
+  const name = decodeURIComponent(nameEncoded);
+  document.getElementById('confirm-modal-msg').textContent = `Tem a certeza que pretende remover a empresa "${name}"? Todos os dados (candidatos, vagas, testes, tickets) e a conta de acesso serão eliminados permanentemente.`;
+  document.getElementById('confirm-modal-btn').onclick = async () => {
+    closeConfirm();
+    showToast('A eliminar empresa e todos os dados...');
+    try {
+      // Call API to delete org + auth user + all related data
+      const res = await fetch('https://rhcportal.vercel.app/api/admin-delete-company', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer rhc_cron_2024'
+        },
+        body: JSON.stringify({ org_id: id })
+      });
+      const data = await res.json();
+      if(!res.ok) {
+        showToast('Erro ao eliminar: ' + (data.error || 'erro desconhecido'));
+        return;
+      }
+      if(data.warning) console.warn('Warning:', data.warning);
+      STATE.companies = STATE.companies.filter(c => c.id !== id);
+      renderCompanies();
+      showToast('✓ Empresa e todos os dados eliminados');
+      await loadData();
+    } catch(e) {
+      showToast('Erro de ligação: ' + e.message);
+    }
+  };
+  openConfirm();
+}
+
+async function cancelInvite(id) {
+  document.getElementById('confirm-modal-msg').textContent = 'Tem a certeza que pretende cancelar este convite? O link deixará de funcionar.';
+  document.getElementById('confirm-modal-btn').onclick = async () => {
+    closeConfirm();
+    const { error } = await supa.from('company_invites').delete().eq('id', id);
+    if(error) { showToast('Erro: ' + error.message); return; }
+    // Remove from local state immediately
+    STATE.invites = STATE.invites.filter(i => i.id !== id);
+    renderInvites();
+    showToast('✓ Convite cancelado');
+    await loadData();
+  };
+  openConfirm();
+}
+
+function openConfirm()  { document.getElementById('modal-confirm').classList.add('open'); }
+function closeConfirm() { document.getElementById('modal-confirm').classList.remove('open'); }
+async function addAdmin() {
+  // Only Admin role can create new accesses — Suporte shouldn't even see this modal,
+  // but we guard the entry point too in case of direct call.
+  if(CURRENT_ROLE !== 'admin') { showToast('⚠️ Sem permissões'); return; }
+  const name  = document.getElementById('new-admin-name').value.trim();
+  const email = document.getElementById('new-admin-email').value.trim().toLowerCase();
+  const pass  = document.getElementById('new-admin-pass').value;
+  const role  = document.getElementById('new-admin-role')?.value || 'suporte';
+  if(!name||!email||pass.length<8) { showToast('⚠️ Preenche todos os campos (password mín. 8 chars)'); return; }
+  const { error } = await supa.from('superadmins').insert({ name, email, password: pass, role });
+  if(error) { showToast('Erro: ' + error.message); return; }
+  closeModal('modal-add-admin');
+  ['new-admin-name','new-admin-email','new-admin-pass'].forEach(id => document.getElementById(id).value='');
+  const rLabel = role === 'admin' ? 'Admin' : 'Suporte';
+  showToast('✓ ' + rLabel + ' adicionado');
+  await loadData();
+}
+
+async function removeAdmin(id, nameEncoded) {
+  if(CURRENT_ROLE !== 'admin') { showToast('⚠️ Sem permissões'); return; }
+  const name = nameEncoded ? decodeURIComponent(nameEncoded) : '';
+  // Use the same custom confirm modal as removeCompany — keeps the look consistent with
+  // the rest of the admin panel instead of the native browser dialog.
+  document.getElementById('confirm-modal-msg').textContent = name
+    ? `Tem a certeza que pretende remover ${name}?`
+    : 'Tem a certeza que pretende remover este acesso?';
+  document.getElementById('confirm-modal-btn').onclick = async () => {
+    closeConfirm();
+    const { error } = await supa.from('superadmins').delete().eq('id', id);
+    if(error) { showToast('Erro: ' + error.message); return; }
+    showToast('✓ Removido');
+    await loadData();
+  };
+  openConfirm();
+}
+
+// ── UI HELPERS ────────────────────────────────────
+function showTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.target.classList.add('active');
+  if(tab === 'tickets') renderTickets();
+}
+
+let _currentTicket = null;
+
+async function loadTicketsBadge() {
+  try {
+    const { data } = await supa.from('tickets').select('id,status').neq('status','fechado');
+    const count = data?.length || 0;
+    const badge = document.getElementById('tickets-badge');
+    if(badge) { badge.textContent = count; badge.style.display = count > 0 ? 'inline' : 'none'; }
+    const statEl = document.getElementById('stat-tickets-open');
+    if(statEl) statEl.textContent = count;
+  } catch(e) {}
+}
+
+async function renderTickets() {
+  const body = document.getElementById('tickets-body');
+  body.innerHTML = '<div class="empty">A carregar...</div>';
+  try {
+    const { data: tickets } = await supa.from('tickets').select('*').order('created_at', { ascending: false });
+
+    if(!tickets?.length) {
+      body.innerHTML = `
+        <div class="table-head" style="grid-template-columns:2fr 2fr 1fr 1fr 1fr;"><div>Utilizador</div><div>Assunto</div><div>Tipo</div><div>Estado</div><div>Data</div></div>
+        <div class="empty" style="margin-top:24px;">Sem tickets de suporte de momento.</div>`;
+      return;
+    }
+
+    const statusColor = { novo: '#e26b6b', em_analise: '#efb84a', fechado: '#5DCAA5' };
+    const statusLabel = { novo: 'Novo', em_analise: 'Em análise', fechado: 'Fechado' };
+    const tipoBadge   = { formulario: '⚠ Formulário', dashboard: '💬 Dashboard' };
+    const sourceBadge  = { recruiter: '🏢 Recruiter', candidato: '👤 Candidato', undefined: '' };
+
+    body.innerHTML = `
+      <div class="table-head" style="grid-template-columns:2fr 2fr 1fr 1fr 1fr;"><div>Utilizador</div><div>Assunto</div><div>Tipo</div><div>Estado</div><div>Data</div></div>
+      ${tickets.map(t => `
+        <div class="table-row" style="grid-template-columns:2fr 2fr 1fr 1fr 1fr;cursor:pointer;border:1px solid ${t.status==='novo'?'rgba(226,107,107,.25)':'#1e1e1e'};border-radius:10px;margin-bottom:6px;padding:10px 14px;background:#111;transition:border-color .15s;"
+          onclick="openTicket('${t.id}')"
+          onmouseover="this.style.borderColor='#333'" onmouseout="this.style.borderColor='${t.status==='novo'?'rgba(226,107,107,.25)':'#1e1e1e'}'">
+          <div class="company-info">
+            <div class="company-avatar" style="width:28px;height:28px;font-size:11px;">${initials(t.name||t.email)}</div>
+            <div>
+              <div style="font-size:13px;color:#ddd;font-weight:500;">${t.name||'—'}</div>
+              <div style="font-size:11px;color:#555;">${t.email}</div>
+            </div>
+          </div>
+          <div style="font-size:12px;color:#efb84a;align-self:center;">${t.assunto}</div>
+          <div style="align-self:center;font-size:11px;color:#888;">
+            ${t.source==='recruiter' ? '<span style="background:rgba(93,202,165,.12);color:#5DCAA5;border:1px solid rgba(93,202,165,.2);border-radius:4px;padding:1px 6px;font-size:10px;font-weight:600;">🏢 Recruiter</span>' : (tipoBadge[t.tipo]||t.tipo)}
+          </div>
+          <div style="align-self:center;"><span class="status-pill" style="background:rgba(${t.status==='novo'?'226,107,107':t.status==='em_analise'?'239,184,74':'93,202,165'},.12);color:${statusColor[t.status]||'#888'};border:1px solid ${statusColor[t.status]||'#888'}33;">${statusLabel[t.status]||t.status}</span></div>
+          <div style="font-size:11px;color:#555;align-self:center;display:flex;align-items:center;gap:8px;">
+            ${new Date(t.created_at).toLocaleDateString('pt-PT')}
+            <button onclick="event.stopPropagation();deleteTicketById('${t.id}','${(t.name||t.email).replace(/'/g,'')}')" style="background:none;border:none;color:#444;font-size:20px;cursor:pointer;padding:0 0 0 16px;line-height:1;font-weight:300;" title="Apagar ticket" onmouseover="this.style.color='#e26b6b'" onmouseout="this.style.color='#444'">×</button>
+          </div>
+        </div>`).join('')}`;
+  } catch(e) {
+    body.innerHTML = '<div class="empty">Erro ao carregar tickets.</div>';
+  }
+}
+
+async function openTicket(id) {
+  const { data: tickets } = await supa.from('tickets').select('*').eq('id', id).single();
+  _currentTicket = tickets;
+  if(!tickets) return;
+
+  // Mark as em_analise if novo
+  if(tickets.status === 'novo') {
+    await supa.from('tickets').update({ status: 'em_analise', updated_at: new Date().toISOString() }).eq('id', id);
+    _currentTicket.status = 'em_analise';
+    loadTicketsBadge();
+  }
+
+  const isRecruiter = tickets.source === 'recruiter';
+  const isFormulario = tickets.tipo === 'formulario';
+
+  document.getElementById('ticket-modal-title').textContent = `Ticket — ${tickets.name || tickets.email}${isRecruiter ? ' 🏢' : ''}`;
+  document.getElementById('btn-resend-invite').style.display = (!isRecruiter && isFormulario) ? 'block' : 'none';
+  document.getElementById('ticket-reply-text').placeholder = tickets.lang === 'en'
+    ? (isRecruiter ? 'Write your reply to the recruiter...' : 'Write your reply to the candidate...')
+    : (isRecruiter ? 'Escreve a tua resposta ao recruiter...' : 'Escreve a tua resposta ao candidato...');
+
+  // For recruiters: build the full conversation history.
+  // Source of truth: tickets.resposta JSON log (always readable). We also pull ticket_messages
+  // and merge by content so older tickets that pre-date the JSON log still display correctly.
+  let conversationHtml = '';
+  if(isRecruiter) {
+    try {
+      const { data: msgs } = await supa.from('ticket_messages')
+        .select('*').eq('ticket_id', id).order('created_at', { ascending: true });
+      const messages = msgs || [];
+
+      const fmtDate = d => d ? new Date(d).toLocaleString(tickets.lang==='en'?'en-GB':'pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+      const bubble = (who, when, body) => `
+        <div style="display:flex;flex-direction:column;align-items:${who==='admin'?'flex-end':'flex-start'};">
+          <div style="max-width:82%;background:${who==='admin'?'rgba(93,202,165,.10)':'#1a1a1a'};border:1px solid ${who==='admin'?'rgba(93,202,165,.25)':'#2a2a2a'};border-radius:12px;padding:11px 15px;">
+            <div style="font-size:11px;color:${who==='admin'?'#5DCAA5':'#999'};margin-bottom:4px;font-weight:500;">${who==='admin'?'RHC Admin':(tickets.name||'Recruiter')} · ${when}</div>
+            <div style="font-size:13px;color:#e6e6e6;line-height:1.65;white-space:pre-wrap;word-break:break-word;">${body}</div>
+          </div>
+        </div>`;
+
+      // Merge: start with tickets.resposta JSON log if it has any entries, else fall back
+      // to ticket_messages + original description.
+      const log = parseConversation(tickets.resposta);
+      let entries;
+      if(log.length) {
+        entries = log;
+        // Ensure original description is the very first entry if not already present
+        const desc = (tickets.descricao || '').trim();
+        if(desc && !(log[0] && log[0].s === 'recruiter' && (log[0].b || '').trim() === desc)) {
+          entries = [{ s: 'recruiter', t: tickets.created_at, b: desc }, ...log];
+        }
+      } else {
+        entries = [];
+        const desc = (tickets.descricao || '').trim();
+        const firstMsgBody = messages.length ? (messages[0].body || '').trim() : '';
+        if(desc && desc !== firstMsgBody) entries.push({ s: 'recruiter', t: tickets.created_at, b: desc });
+        messages.forEach(m => entries.push({ s: m.sender, t: m.created_at, b: m.body }));
+      }
+
+      const bubbles = entries.map(e => bubble(e.s, fmtDate(e.t), e.b)).join('');
+      conversationHtml = `<div style="display:flex;flex-direction:column;gap:10px;max-height:340px;overflow-y:auto;padding-right:4px;">${bubbles}</div>`;
+    } catch(e) { console.warn('messages err',e); }
+  }
+
+  const metaFields = isRecruiter
+    ? [['Recruiter', tickets.name||'—'],['Email', tickets.email],['Empresa', tickets.company||'—'],['Idioma', tickets.lang==='en'?'🇬🇧 English':'🇵🇹 Português'],['Fonte','🏢 Recruiter']]
+    : [['Utilizador', tickets.name||'—'],['Email', tickets.email],['Empresa', tickets.company||'—'],['Vaga', tickets.job||'—'],['Tipo', tickets.tipo==='formulario'?'⚠️ Problema no formulário':'💬 Problema no dashboard'],['Idioma', tickets.lang==='en'?'🇬🇧 English':'🇵🇹 Português']];
+
+  const blockStyle = 'background:#0d0d0d;border:1px solid #1e1e1e;border-radius:10px;padding:16px;margin-bottom:12px;';
+  const labelStyle = 'font-size:10px;color:#555;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;font-weight:600;';
+  const sectionTitle = 'font-size:11px;color:#5DCAA5;text-transform:uppercase;letter-spacing:.6px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:6px;';
+
+  if(isRecruiter) {
+    document.getElementById('ticket-modal-body').innerHTML = `
+      <!-- BLOCO 1: Info do recruiter -->
+      <div style="${blockStyle}">
+        <div style="${sectionTitle}">👤 ${tickets.lang==='en'?'Recruiter information':'Informação do recruiter'}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;">
+          ${metaFields.map(([k,v])=>`<div><div style="${labelStyle}">${k}</div><div style="font-size:13px;color:#ddd;">${v}</div></div>`).join('')}
+        </div>
+      </div>
+
+      <!-- BLOCO 2: Assunto + Conversa -->
+      <div style="${blockStyle}">
+        <div style="${sectionTitle}">💬 ${tickets.lang==='en'?'Conversation':'Conversa'}</div>
+        <div style="${labelStyle}">${tickets.lang==='en'?'Subject':'Assunto'}</div>
+        <div style="font-size:14px;color:#efb84a;font-weight:600;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #1e1e1e;">${tickets.assunto}</div>
+        ${conversationHtml || '<div style="font-size:12px;color:#555;font-style:italic;">'+(tickets.lang==='en'?'No messages yet.':'Sem mensagens ainda.')+'</div>'}
+      </div>`;
+  } else {
+    document.getElementById('ticket-modal-body').innerHTML = `
+      <div style="${blockStyle}">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin-bottom:14px;">
+          ${metaFields.map(([k,v])=>`<div><div style="${labelStyle}">${k}</div><div style="font-size:13px;color:#ddd;">${v}</div></div>`).join('')}
+        </div>
+        <div style="${labelStyle}">Assunto</div>
+        <div style="font-size:13px;color:#efb84a;font-weight:600;margin-bottom:10px;">${tickets.assunto}</div>
+        <div style="${labelStyle}">Descrição</div>
+        <div style="font-size:13px;color:#aaa;line-height:1.7;">${tickets.descricao}</div>
+        ${tickets.resposta ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid #1e1e1e;"><div style="font-size:11px;color:#5DCAA5;margin-bottom:4px;">✓ Resposta enviada:</div><div style="font-size:13px;color:#aaa;">${tickets.resposta}</div></div>` : ''}
+      </div>`;
+  }
+
+  // Show/hide close ticket button for recruiters
+  const closeBtn = document.getElementById('btn-close-recruiter-ticket');
+  if(closeBtn) closeBtn.style.display = (isRecruiter && tickets.status !== 'fechado') ? 'block' : 'none';
+  // Change reply button label based on source
+  const replyBtn = document.querySelector('.modal-footer button:first-child');
+  if(replyBtn) replyBtn.textContent = isRecruiter ? '✓ Responder' : '✓ Responder e fechar';
+
+  document.getElementById('modal-ticket').classList.add('open');
+  renderTickets();
+}
+
+let _deleteTicketId = null;
+let _deleteTicketName = null;
+
+function deleteTicketById(id, name) {
+  _deleteTicketId = id;
+  _deleteTicketName = name;
+  document.getElementById('confirm-modal-msg').textContent = `Tens a certeza que queres apagar o ticket de "${name}"? Esta acção não pode ser desfeita.`;
+  document.getElementById('confirm-modal-btn').textContent = 'Sim, apagar';
+  document.getElementById('confirm-modal-btn').style.background = '#e26b6b';
+  document.getElementById('confirm-modal-btn').onclick = async () => {
+    // Cascade delete: remove all ticket_messages first (they reference this ticket),
+    // then the ticket itself. Keeps the database free of orphaned message rows.
+    try { await supa.from('ticket_messages').delete().eq('ticket_id', _deleteTicketId); }
+    catch(e) { console.warn('ticket_messages delete:', e); }
+    await supa.from('tickets').delete().eq('id', _deleteTicketId);
+    closeConfirm();
+    loadTicketsBadge();
+    renderTickets();
+    showToast('✓ Ticket apagado', {success: true});
+  };
+  openConfirm();
+}
+
+async function deleteTicket() {
+  if(!_currentTicket) return;
+  _deleteTicketId = _currentTicket.id;
+  _deleteTicketName = _currentTicket.name || _currentTicket.email;
+  document.getElementById('confirm-modal-msg').textContent = `Tens a certeza que queres apagar o ticket de "${_deleteTicketName}"? Esta acção não pode ser desfeita.`;
+  document.getElementById('confirm-modal-btn').textContent = 'Sim, apagar';
+  document.getElementById('confirm-modal-btn').style.background = '#e26b6b';
+  document.getElementById('confirm-modal-btn').onclick = async () => {
+    // Cascade delete: remove all ticket_messages first, then the ticket itself.
+    try { await supa.from('ticket_messages').delete().eq('ticket_id', _deleteTicketId); }
+    catch(e) { console.warn('ticket_messages delete:', e); }
+    await supa.from('tickets').delete().eq('id', _deleteTicketId);
+    closeConfirm();
+    closeModal('modal-ticket');
+    loadTicketsBadge();
+    renderTickets();
+    showToast('✓ Ticket apagado', {success: true});
+  };
+  openConfirm();
+}
+
+async function closeRecruiterTicket() {
+  if(!_currentTicket) return;
+  await supa.from('tickets').update({ status: 'fechado', updated_at: new Date().toISOString() }).eq('id', _currentTicket.id);
+  closeModal('modal-ticket');
+  loadTicketsBadge();
+  renderTickets();
+  showToast('Ticket fechado.');
+}
+
+async function replyTicket() {
+  if(!_currentTicket) return;
+  const reply = document.getElementById('ticket-reply-text').value.trim();
+  if(!reply) { alert('Escreve uma resposta antes de enviar.'); return; }
+
+  const isRecruiter = _currentTicket.source === 'recruiter';
+
+  if(isRecruiter) {
+    // Recruiter ticket: insert message AND append to a JSON conversation log stored in
+    // tickets.resposta. The conversation log is the source of truth for what both sides see —
+    // it bypasses any RLS issues on ticket_messages because tickets is always readable.
+    try {
+      await supa.from('ticket_messages').insert({
+        ticket_id: _currentTicket.id,
+        sender: 'admin',
+        body: reply,
+        created_at: new Date().toISOString()
+      });
+
+      // Build/extend conversation log
+      let convo = parseConversation(_currentTicket.resposta);
+      // If empty and ticket has descricao, seed it as the recruiter's first message
+      if(!convo.length && _currentTicket.descricao) {
+        convo.push({ s: 'recruiter', t: _currentTicket.created_at, b: _currentTicket.descricao });
+      }
+      convo.push({ s: 'admin', t: new Date().toISOString(), b: reply });
+
+      await supa.from('tickets').update({
+        status: 'em_analise',
+        resposta: JSON.stringify(convo),
+        updated_at: new Date().toISOString()
+      }).eq('id', _currentTicket.id);
+
+      document.getElementById('ticket-reply-text').value = '';
+      closeModal('modal-ticket');
+      loadTicketsBadge();
+      renderTickets();
+      showToast('✓ Mensagem enviada', {success: true});
+    } catch(e) {
+      showToast('Erro ao enviar resposta');
+    }
+    return;
+  }
+
+  // Candidate ticket: save reply and close ticket
+  await supa.from('tickets').update({ resposta: reply, status: 'fechado', updated_at: new Date().toISOString() }).eq('id', _currentTicket.id);
+
+  // Send email with reply via Resend
+  const isEN = _currentTicket.lang === 'en';
+  try {
+    await fetch('https://rhcportal.vercel.app/api/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: 'RHC Suporte <noreply@rhc.pt>',
+        to: [_currentTicket.email],
+        subject: `Response to your support request - RHC`,
+        html: buildEmailHTML(`
+          <p style="margin:0 0 20px 0;">Hi,</p>
+          <p style="margin:0 0 18px 0;">We've responded to your support request: <strong>${_currentTicket.assunto}</strong></p>
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="background:#f9fafb;border-left:3px solid #5DCAA5;border-radius:4px;padding:14px 18px;margin:0 0 24px 0;width:100%;">
+            <tr><td style="font-size:14px;color:#374151;line-height:1.65;white-space:pre-wrap;">${reply}</td></tr>
+          </table>
+          <p style="margin:0 0 28px 0;font-size:14px;color:#6b7280;">If you need further help, please log in to the candidate portal or reply to this email.</p>
+          <p style="margin:0;">Best regards,<br><strong>The RHC Team</strong></p>
+        `)
+      })
+    });
+  } catch(e) { console.warn('Email send failed:', e); }
+
+  closeModal('modal-ticket');
+  loadTicketsBadge();
+  renderTickets();
+  showToast('✓ Resposta enviada', {success: true});
+}
+
+async function resendInviteTicket() {
+  if(!_currentTicket) return;
+  document.getElementById('confirm-modal-msg').textContent = `Tens a certeza que queres reenviar o convite e apagar o perfil de "${_currentTicket.name||_currentTicket.email}"? O perfil actual será eliminado.`;
+  document.getElementById('confirm-modal-btn').textContent = 'Enviar convite';
+  document.getElementById('confirm-modal-btn').style.background = '#efb84a';
+  document.getElementById('confirm-modal-btn').style.color = '#0e0e0e';
+  document.getElementById('confirm-modal-btn').onclick = async () => {
+    closeConfirm();
+    await _doResendInvite();
+  };
+  // Update cancel button text
+  const cancelBtn = document.querySelector('#modal-confirm button:not(#confirm-modal-btn)');
+  if(cancelBtn) cancelBtn.textContent = 'Cancelar';
+  openConfirm();
+}
+
+async function _doResendInvite() {
+
+  // Delete candidate via service key API (bypasses RLS)
+  try {
+    const email = _currentTicket.email.toLowerCase().trim();
+    const delRes = await fetch('https://rhcportal.vercel.app/api/admin-delete-candidate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer rhc_cron_2024'
+      },
+      body: JSON.stringify({ email })
+    });
+    const delData = await delRes.json();
+    if(!delRes.ok) console.error('Delete failed:', delData);
+  } catch(e) { console.error('Delete error:', e); }
+
+  // Get job invite link
+  let inviteLink = `https://candidatos.rhc.pt?company=${encodeURIComponent(_currentTicket.company||'')}&job=${encodeURIComponent(_currentTicket.job||'')}`;
+  if(_currentTicket.org_id) {
+    try {
+      const { data: jobs } = await supa.from('jobs').select('id,ideal_profile,salary_min,salary_max').eq('org_id', _currentTicket.org_id).ilike('title', _currentTicket.job||'').limit(1);
+      if(jobs?.[0]) {
+        inviteLink += `&job_id=${jobs[0].id}&profile=${encodeURIComponent(jobs[0].ideal_profile||'')}`;
+        if(jobs[0].salary_min) inviteLink += `&salaryMin=${jobs[0].salary_min}`;
+        if(jobs[0].salary_max) inviteLink += `&salaryMax=${jobs[0].salary_max}`;
+      }
+    } catch(e) {}
+  }
+  if(_currentTicket.lang === 'en') inviteLink += '&lang=en';
+
+  const isEN = _currentTicket.lang === 'en';
+  const firstName = (_currentTicket.name||'Candidate').split(' ')[0];
+
+  // Send new invite email
+  await fetch('https://rhcportal.vercel.app/api/send-email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: 'RHC Recrutamento <noreply@rhc.pt>',
+      to: [_currentTicket.email],
+      subject: `Your application link has been renewed - ${_currentTicket.job}`,
+      html: buildEmailHTML(`
+        <p style="margin:0 0 20px 0;">Hi ${firstName},</p>
+        <p style="margin:0 0 18px 0;">We're sorry you encountered a problem with your application for the position of <strong>${_currentTicket.job}</strong> at <strong>${_currentTicket.company||'RHC'}</strong>.</p>
+        <p style="margin:0 0 24px 0;">We've reset your profile and prepared a new application link so you can start the process again without any issues. Click the button below to continue.</p>
+        <p style="margin:0 0 24px 0;text-align:center;"><a href="${inviteLink}" style="background:#0a0a0f;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:6px;font-weight:600;font-size:14px;display:inline-block;">Start new application</a></p>
+        <p style="margin:0 0 28px 0;font-size:13px;color:#6b7280;">If you encounter any further issues, please don't hesitate to reach out by replying to this email.</p>
+        <p style="margin:0;">Best regards,<br><strong>The RHC Team</strong></p>
+      `)
+    })
+  });
+
+  // Close ticket
+  await supa.from('tickets').update({ status: 'fechado', resposta: 'Convite reenviado e perfil apagado.', updated_at: new Date().toISOString() }).eq('id', _currentTicket.id);
+
+  closeModal('modal-ticket');
+  loadTicketsBadge();
+  renderTickets();
+  showToast('✓ Convite reenviado. Perfil apagado.');
+}
+
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  document.getElementById('inv-link-box').style.display = 'none';
+  document.getElementById('inv-company').value = '';
+  document.getElementById('inv-email').value = '';
+}
+
+let _toastTimer;
+// Parse a tickets.resposta value into an array of conversation entries.
+// Backwards compatible: if resposta is plain text (legacy single admin reply),
+// wrap it as a single admin message.
+function parseConversation(resposta) {
+  if(!resposta) return [];
+  const s = String(resposta).trim();
+  if(!s) return [];
+  if(s.startsWith('[')) {
+    try {
+      const arr = JSON.parse(s);
+      if(Array.isArray(arr)) return arr.filter(x => x && x.b);
+    } catch(e) {}
+  }
+  // Legacy plain text — treat as a single admin reply
+  return [{ s: 'admin', t: null, b: s }];
+}
+
+function showToast(msg, opts) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.remove('success');
+  if(opts && opts.success) t.classList.add('success');
+  t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── BOOT ──────────────────────────────────────────
+(function() {
+  const saved = localStorage.getItem(ADMIN_SESSION_KEY);
+  if(saved) {
+    try {
+      ADMIN = JSON.parse(saved);
+      enterAdmin();
+    } catch(e) { localStorage.removeItem(ADMIN_SESSION_KEY); }
+  }
+})();
+</script>
+</body>
+</html>
