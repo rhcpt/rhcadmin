@@ -1439,7 +1439,14 @@
 <script>
 const SUPA_URL = 'https://sgecgsnxljohhfbftevg.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNnZWNnc254bGpvaGhmYmZ0ZXZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3NzMzNjQsImV4cCI6MjA5MjM0OTM2NH0.Igv5qrLk8NwsheStNv7VY4cvdCO-svEGx6S89OZubps';
-const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+// Storage = sessionStorage instead of the SDK default localStorage. This
+// ties the Auth session to the tab/window lifetime: refreshing the same tab
+// keeps the user logged in, but closing the tab (or opening admin.rhc.pt in
+// a new tab/window) requires a fresh login. Wanted explicitly for the admin
+// panel — keeps stale logged-in sessions out of unattended browsers.
+const supa = supabase.createClient(SUPA_URL, SUPA_KEY, {
+  auth: { storage: window.sessionStorage }
+});
 
 const RECRUITER_PORTAL = 'https://portal.rhc.pt';
 const CANDIDATE_PORTAL = 'https://rhccandidatos.vercel.app';
