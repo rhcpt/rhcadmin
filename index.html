@@ -919,12 +919,19 @@ async function removeCompany(id, nameEncoded) {
     closeConfirm();
     showToast('A eliminar empresa e todos os dados...');
     try {
-      // Call API to delete org + auth user + all related data
+      // Call API to delete org + auth user + all related data. The endpoint
+      // now verifies the caller's Supabase Auth JWT against the hardcoded
+      // super-admin email — only Francisco can trigger company deletion.
+      const _adHdr = await _supaAuthHeader();
+      if(!_adHdr) {
+        showToast('⚠️ Sessão inválida — volta a fazer login');
+        return;
+      }
       const res = await fetch('https://rhcportal.vercel.app/api/admin-delete-company', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer rhc_cron_2024'
+          'Authorization': _adHdr
         },
         body: JSON.stringify({ org_id: id })
       });
@@ -1380,11 +1387,16 @@ async function _doResendInvite() {
   try {
     const email = _currentTicket.email.toLowerCase().trim();
     const orgId = _currentTicket.org_id || null;
+    const _adHdr = await _supaAuthHeader();
+    if(!_adHdr) {
+      showToast('⚠️ Sessão inválida — volta a fazer login');
+      return;
+    }
     const delRes = await fetch('https://rhcportal.vercel.app/api/admin-delete-candidate', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer rhc_cron_2024'
+        'Authorization': _adHdr
       },
       body: JSON.stringify({ email, org_id: orgId })
     });
