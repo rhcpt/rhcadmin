@@ -61,14 +61,12 @@
 
   /* ── MAIN ── */
   #main-page { display: none; min-height: 100vh; }
-  /* When shown, #main-page is a 2-column shell (sidebar + main). The JS sets
-     display: grid (not block) to enable the layout. */
-  #main-page.app-shell { grid-template-columns: 220px 1fr; }
 
   /* ── UNIFIED SHELL — shared by admin/suporte AND marketing.
      Sidebar is dark, fixed 220px, with user card at bottom that opens the
-     profile modal. Both areas use these same classes. ── */
-  .app-shell { min-height: 100vh; }
+     profile modal. Both areas use these same classes. display: grid is set
+     inline by JS (enterAdmin) once we know which area to mount. ── */
+  .app-shell { min-height: 100vh; grid-template-columns: 220px 1fr; }
   .app-side {
     background: #0a0a0a;
     color: rgba(245,243,239,.7);
