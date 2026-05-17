@@ -867,24 +867,32 @@ function copyLink(link) {
 }
 
 // ── ENTER AS COMPANY ──────────────────────────────
-function enterAsCompany(orgId, companyNameEncoded) {
+async function enterAsCompany(orgId, companyNameEncoded) {
   const companyName = decodeURIComponent(companyNameEncoded);
   // Cross-domain handoff: localStorage on admin.rhc.pt is invisible to
-  // portal.rhc.pt, so we encode the admin identity in the URL. The portal
-  // validates the email against its own hardcoded SUPERADMIN_EMAILS list
-  // before honouring the impersonation. We also still write the local
-  // session blob in case any same-origin tooling consumes it.
+  // portal.rhc.pt. We pass the admin's Supabase Auth access_token in the
+  // URL — the portal validates it via supa.auth.getUser(token) and then
+  // confirms the email exists in superadmins (the read_own_admin RLS lets
+  // any authenticated user read their own row, so both admin and suporte
+  // profiles can impersonate). The JWT is signed, can't be forged, and
+  // expires automatically (~1h), so URL leakage has bounded blast radius.
+  let adminToken = '';
   try {
-    localStorage.setItem('rhc_superadmin_impersonate', JSON.stringify({
-      orgId, companyName,
-      adminEmail: (ADMIN && ADMIN.email) || '',
-      adminName:  (ADMIN && ADMIN.name)  || ''
-    }));
+    const { data: { session } } = await supa.auth.getSession();
+    adminToken = (session && session.access_token) || '';
   } catch(e) {}
+  if(!adminToken) {
+    showToast('⚠️ Sessão inválida — volta a fazer login');
+    return;
+  }
+  // Keep email/name as well so older portal builds that still read URL
+  // params (rather than the token) keep working during rollout.
   const adminEmail = encodeURIComponent((ADMIN && ADMIN.email) || '');
   const adminName  = encodeURIComponent((ADMIN && ADMIN.name)  || '');
   window.open(
-    `${RECRUITER_PORTAL}?superadmin=1&org=${orgId}&adminEmail=${adminEmail}&adminName=${adminName}`,
+    `${RECRUITER_PORTAL}?superadmin=1&org=${orgId}` +
+    `&adminEmail=${adminEmail}&adminName=${adminName}` +
+    `&adminToken=${encodeURIComponent(adminToken)}`,
     '_blank'
   );
 }
