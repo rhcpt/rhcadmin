@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RHC Admin</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -20,7 +20,7 @@
     --accent2:#00b87a;
     --red:    #e26b6b;
     --font-head: 'Syne', sans-serif;
-    --font-sans: 'Inter', sans-serif;
+    --font-sans: 'DM Sans', sans-serif;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--ink); color: var(--paper); font-family: var(--font-sans); min-height: 100vh; }
@@ -61,38 +61,74 @@
 
   /* ── MAIN ── */
   #main-page { display: none; min-height: 100vh; }
+  /* When shown, #main-page is a 2-column shell (sidebar + main). The JS sets
+     display: grid (not block) to enable the layout. */
+  #main-page.app-shell { grid-template-columns: 220px 1fr; }
 
-  /* NAV */
-  .nav {
-    background: var(--ink2); border-bottom: 1px solid var(--border);
-    padding: 0 32px; display: flex; align-items: center; height: 60px; gap: 32px;
-    position: sticky; top: 0; z-index: 100;
+  /* ── UNIFIED SHELL — shared by admin/suporte AND marketing.
+     Sidebar is dark, fixed 220px, with user card at bottom that opens the
+     profile modal. Both areas use these same classes. ── */
+  .app-shell { min-height: 100vh; }
+  .app-side {
+    background: #0a0a0a;
+    color: rgba(245,243,239,.7);
+    padding: 1.3rem 1rem;
+    position: sticky; top: 0; height: 100vh;
+    display: flex; flex-direction: column;
+    border-right: 1px solid var(--border);
   }
-  .nav-logo { font-family: var(--font-head); font-size: 18px; font-weight: 800; }
-  .nav-logo span { color: var(--accent); }
-  .nav-badge {
-    background: rgba(0,229,160,.1); color: var(--accent); font-size: 10px;
-    font-weight: 600; letter-spacing: 1px; padding: 3px 8px; border-radius: 20px;
-    border: 1px solid rgba(0,229,160,.2);
+  .app-logo {
+    font-family: var(--font-head); font-weight: 800; font-size: 1.4rem;
+    color: var(--paper); letter-spacing: -0.04em; margin: 0 0 1.6rem .4rem;
   }
-  .nav-tabs { display: flex; gap: 4px; flex: 1; }
-  .nav-tab {
-    padding: 8px 16px; border-radius: 8px; font-size: 13px; color: var(--muted);
-    cursor: pointer; transition: all .15s; font-family: var(--font-sans); border: none; background: none;
+  .app-logo span { color: var(--accent); }
+  .app-side-section {
+    font-family: var(--font-head); font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.14em;
+    color: rgba(245,243,239,.35); margin: 1.2rem .6rem .4rem;
   }
-  .nav-tab:hover { color: var(--paper); background: var(--ink3); }
-  .nav-tab.active { color: var(--paper); background: var(--ink3); }
-  .nav-right { display: flex; align-items: center; gap: 12px; }
-  .nav-user { font-size: 13px; color: var(--muted); }
-  .btn-logout {
-    background: none; border: 1px solid var(--border2); border-radius: 8px;
-    padding: 7px 14px; font-size: 12px; color: var(--muted); cursor: pointer;
-    font-family: var(--font-sans); transition: all .15s;
+  .app-side-section:first-of-type { margin-top: 0; }
+  .app-sidenav-link {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px; color: rgba(245,243,239,.6); text-decoration: none;
+    font-size: 13px; border-radius: 8px; margin-bottom: 2px;
+    cursor: pointer; font-family: var(--font-sans);
+    background: transparent; border: none; text-align: left; width: 100%;
+    transition: background .12s, color .12s;
   }
-  .btn-logout:hover { color: var(--red); border-color: var(--red); }
+  .app-sidenav-link:hover { background: rgba(255,255,255,.04); color: var(--paper); }
+  .app-sidenav-link.active { background: rgba(0,229,160,.12); color: var(--paper); }
+  .app-sidenav-link.active i { color: var(--accent); }
+  .app-sidenav-link i { font-size: 16px; color: rgba(245,243,239,.5); }
+  .app-sidenav-link .count {
+    margin-left: auto; font-size: 11px; font-weight: 500;
+    color: rgba(245,243,239,.5); background: rgba(255,255,255,.06);
+    padding: 2px 7px; border-radius: 100px; min-width: 22px; text-align: center;
+  }
+  .app-sidenav-link.active .count { background: rgba(255,255,255,.12); color: var(--paper); }
+  .app-user {
+    margin-top: auto; padding: 10px 12px;
+    display: flex; align-items: center; gap: 10px;
+    border-radius: 8px;
+    background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06);
+    cursor: pointer;
+    transition: background .12s, border-color .12s;
+  }
+  .app-user:hover { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.12); }
+  .app-user-av {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #0a0a0f;
+    font-family: var(--font-head); font-weight: 700; font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .app-user-name { font-size: 13px; color: var(--paper); line-height: 1.2; }
+  .app-user-role { font-size: 11px; color: rgba(245,243,239,.45); }
+  .app-main { padding: 40px 32px; max-width: 1280px; min-width: 0; }
 
-  /* CONTENT */
-  .content { max-width: 1100px; margin: 0 auto; padding: 40px 32px; }
+  /* CONTENT — kept for backwards-compatibility with any unmoved markup. */
+  .content { padding: 40px 32px; }
 
   /* TABS */
   .tab-panel { display: none; }
@@ -245,24 +281,27 @@
 </div>
 
 <!-- MAIN -->
-<div id="main-page">
-  <nav class="nav">
-    <div class="nav-logo">RH<span>C</span></div>
-    <div class="nav-badge">ADMIN</div>
-    <div class="nav-tabs">
-      <button class="nav-tab active" onclick="showTab('companies')">Empresas</button>
-      <button class="nav-tab" onclick="showTab('invites')">Convites</button>
-      <button class="nav-tab" onclick="showTab('admins')">Admins</button>
-      <button class="nav-tab" id="tab-tickets-btn" onclick="showTab('tickets')">Tickets <span id="tickets-badge" style="display:none;background:#e26b6b;color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;margin-left:4px;">0</span></button>
-    </div>
-    <div class="nav-right">
-      <span id="role-badge"></span>
-      <span class="nav-user" id="nav-user-name"></span>
-      <button class="btn-logout" onclick="doLogout()">Sair</button>
-    </div>
-  </nav>
+<div id="main-page" class="app-shell">
+  <aside class="app-side">
+    <div class="app-logo">RH<span>C</span></div>
 
-  <div class="content">
+    <div class="app-side-section">Operações</div>
+    <button class="app-sidenav-link active" onclick="showTab('companies')"><i class="ti ti-building"></i>Empresas</button>
+    <button class="app-sidenav-link" onclick="showTab('invites')"><i class="ti ti-mail"></i>Convites</button>
+    <button class="app-sidenav-link" onclick="showTab('admins')"><i class="ti ti-shield-lock"></i>Acessos</button>
+    <button class="app-sidenav-link" id="tab-tickets-btn" onclick="showTab('tickets')"><i class="ti ti-life-buoy"></i>Tickets <span class="count" id="tickets-badge" style="display:none;">0</span></button>
+
+    <div class="app-user" id="admin-user-card" onclick="openUserProfile()" title="Ver perfil">
+      <div class="app-user-av" id="nav-user-av">—</div>
+      <div style="min-width:0;flex:1;">
+        <div class="app-user-name" id="nav-user-name">—</div>
+        <div class="app-user-role" id="nav-user-role-label">Admin</div>
+      </div>
+      <i class="ti ti-chevron-right" style="color:rgba(245,243,239,.35);font-size:14px;"></i>
+    </div>
+  </aside>
+
+  <main class="app-main">
 
     <!-- TAB: COMPANIES -->
     <div class="tab-panel active" id="tab-companies">
@@ -353,7 +392,7 @@
       <div id="tickets-body" style="margin-top:16px;"></div>
     </div>
 
-  </div>
+  </main>
 </div>
 
 <!-- ╔══════════════════════════════════════════════════════════════╗
@@ -364,43 +403,46 @@
      ║  bleeding into the dark admin shell.                         ║
      ╚══════════════════════════════════════════════════════════════╝ -->
 <style>
-  /* Design tokens scoped to the marketing area only. */
+  /* Design tokens — remapped to the admin's dark palette so the marketing
+     area visually matches the admin/suporte shell. The original token names
+     stay (lots of rules reference them) but their *values* now point at
+     --ink / --paper / --accent etc. defined at :root above. */
   #marketing-area {
-    --mk-font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
-    --mk-font-display: 'Syne', sans-serif;
-    --mk-bg-primary: #ffffff;
-    --mk-bg-secondary: #f6f6f4;
-    --mk-bg-tertiary: #f0f0ee;
-    --mk-bg-inverse: #0a0a0f;
-    --mk-surface-elevated: #ffffff;
-    --mk-surface-muted: #fafaf8;
-    --mk-text-primary: #0a0a0f;
-    --mk-text-secondary: #5a5a6e;
-    --mk-text-tertiary: #9494a3;
-    --mk-text-inverse: #f5f3ef;
-    --mk-border-primary: rgba(10,10,15,0.12);
-    --mk-border-secondary: rgba(10,10,15,0.08);
-    --mk-border-tertiary: rgba(10,10,15,0.06);
-    --mk-accent: #00a584;
-    --mk-accent-soft: #e6f9f3;
-    --mk-accent-ink: #054a3c;
-    --mk-success: #0F6E56;
-    --mk-success-soft: #E1F5EE;
-    --mk-warn-ink: #854F0B;
-    --mk-warn-soft: #FAEEDA;
-    --mk-info-ink: #1e4d8f;
-    --mk-info-soft: #E3EEFB;
-    --mk-cat-ai: #00a584;
-    --mk-cat-cand: #378ADD;
-    --mk-cat-gdpr: #EF9F27;
-    --mk-cat-prod: #B264E0;
+    --mk-font-sans: var(--font-sans);
+    --mk-font-display: var(--font-head);
+    --mk-bg-primary: var(--ink);
+    --mk-bg-secondary: var(--ink);
+    --mk-bg-tertiary: var(--ink3);
+    --mk-bg-inverse: var(--ink);
+    --mk-surface-elevated: var(--ink2);
+    --mk-surface-muted: var(--ink2);
+    --mk-text-primary: var(--paper);
+    --mk-text-secondary: var(--muted);
+    --mk-text-tertiary: #666;
+    --mk-text-inverse: var(--paper);
+    --mk-border-primary: var(--border2);
+    --mk-border-secondary: var(--border);
+    --mk-border-tertiary: var(--border);
+    --mk-accent: var(--accent);
+    --mk-accent-soft: rgba(0,229,160,.12);
+    --mk-accent-ink: var(--accent2);
+    --mk-success: var(--accent);
+    --mk-success-soft: rgba(0,229,160,.12);
+    --mk-warn-ink: #efb84a;
+    --mk-warn-soft: rgba(239,184,74,.12);
+    --mk-info-ink: #6ea3e7;
+    --mk-info-soft: rgba(55,138,221,.12);
+    --mk-cat-ai: var(--accent);
+    --mk-cat-cand: #6ea3e7;
+    --mk-cat-gdpr: #efb84a;
+    --mk-cat-prod: #c089eb;
     --mk-radius-sm: 6px;
     --mk-radius-md: 8px;
     --mk-radius-lg: 12px;
     --mk-radius-xl: 16px;
-    --mk-shadow-sm: 0 1px 2px rgba(10,10,15,.04), 0 1px 1px rgba(10,10,15,.03);
-    --mk-shadow-md: 0 4px 12px rgba(10,10,15,.04), 0 2px 4px rgba(10,10,15,.03);
-    --mk-shadow-lg: 0 16px 40px rgba(10,10,15,.08), 0 4px 12px rgba(10,10,15,.04);
+    --mk-shadow-sm: 0 1px 2px rgba(0,0,0,.18);
+    --mk-shadow-md: 0 4px 12px rgba(0,0,0,.22);
+    --mk-shadow-lg: 0 16px 40px rgba(0,0,0,.32);
     font-family: var(--mk-font-sans);
     background: var(--mk-bg-secondary);
     color: var(--mk-text-primary);
@@ -432,64 +474,14 @@
   }
   #marketing-area select {
     appearance: none; cursor: pointer;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a5a6e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
     background-repeat: no-repeat; background-position: right 10px center;
     padding-right: 30px;
   }
 
-  /* Shell */
-  #marketing-area .mk-shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
-  #marketing-area .mk-side {
-    background: #0a0a0f; color: rgba(245,243,239,.7);
-    padding: 1.3rem 1rem; position: sticky; top: 0; height: 100vh;
-    display: flex; flex-direction: column;
-  }
-  #marketing-area .mk-logo {
-    font-family: var(--mk-font-display); font-weight: 800; font-size: 1.4rem;
-    color: #fff; letter-spacing: -0.04em; margin: 0 0 1.6rem .4rem;
-  }
-  #marketing-area .mk-logo span { color: #00d4aa; }
-  #marketing-area .mk-side-section {
-    font-family: var(--mk-font-display); font-size: 10px; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.14em;
-    color: rgba(245,243,239,.35); margin: 1.2rem .6rem .4rem;
-  }
-  #marketing-area .mk-side a {
-    display: flex; align-items: center; gap: 10px;
-    padding: 8px 12px; color: rgba(245,243,239,.6); text-decoration: none;
-    font-size: 13px; border-radius: var(--mk-radius-md); margin-bottom: 2px;
-    cursor: pointer;
-  }
-  #marketing-area .mk-side a:hover { background: rgba(255,255,255,.04); color: #fff; }
-  #marketing-area .mk-side a.active { background: rgba(0,212,170,.12); color: #fff; }
-  #marketing-area .mk-side a.active i { color: #00d4aa; }
-  #marketing-area .mk-side a i { font-size: 16px; color: rgba(245,243,239,.5); }
-  #marketing-area .mk-user {
-    margin-top: auto; padding: 10px 12px;
-    display: flex; align-items: center; gap: 10px;
-    border-radius: var(--mk-radius-md);
-    background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06);
-    cursor: pointer;
-    transition: background .12s, border-color .12s;
-  }
-  #marketing-area .mk-user:hover { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.12); }
-  #marketing-area .mk-user-av {
-    width: 30px; height: 30px; border-radius: 50%;
-    background: linear-gradient(135deg, #00d4aa, #007a63); color: #0a0a0f;
-    font-family: var(--mk-font-display); font-weight: 700; font-size: 12px;
-    display: flex; align-items: center; justify-content: center;
-  }
-  #marketing-area .mk-user-name { font-size: 13px; color: #fff; line-height: 1.2; }
-  #marketing-area .mk-user-role { font-size: 11px; color: rgba(245,243,239,.45); }
-  #marketing-area .mk-logout {
-    width: 100%; margin-top: 8px; background: rgba(255,255,255,.04);
-    border: 1px solid rgba(255,255,255,.08); color: rgba(245,243,239,.7);
-    padding: 7px 10px; border-radius: var(--mk-radius-md);
-    font-size: 12px; cursor: pointer; transition: background .12s, color .12s;
-  }
-  #marketing-area .mk-logout:hover { background: rgba(255,255,255,.08); color: #fff; }
-
-  #marketing-area .mk-main { padding: 1.4rem 1.8rem 3rem; max-width: 1280px; }
+  /* Shell classes (.app-shell/.app-side/.app-user/.app-main/.app-sidenav-link
+     etc.) live at root scope so they're shared with the admin/suporte
+     panel — no per-area duplication. See the "UNIFIED SHELL" block above. */
 
   /* Sub-tabs (Blog list/editor) */
   #marketing-area .mk-tabs {
@@ -523,9 +515,9 @@
   #marketing-area .mk-btn:disabled:hover { background: transparent; }
   #marketing-area .mk-btn-ghost { border-color: var(--mk-border-secondary); color: var(--mk-text-secondary); }
   #marketing-area .mk-btn-ghost:hover { background: var(--mk-bg-secondary); border-color: var(--mk-border-primary); color: var(--mk-text-primary); }
-  #marketing-area .mk-btn-primary { background: var(--mk-text-primary); color: var(--mk-bg-primary); padding: 9px 16px; }
-  #marketing-area .mk-btn-primary:hover { background: #2a2a3a; }
-  #marketing-area .mk-btn-accent { background: var(--mk-accent); color: #fff; }
+  #marketing-area .mk-btn-primary { background: var(--accent); color: #0a0a0f; padding: 9px 16px; }
+  #marketing-area .mk-btn-primary:hover { background: var(--accent2); }
+  #marketing-area .mk-btn-accent { background: var(--mk-accent); color: #0a0a0f; }
   #marketing-area .mk-btn-accent:hover { background: var(--mk-accent-ink); }
   #marketing-area .mk-btn-icon {
     width: 32px; height: 32px; padding: 0; justify-content: center;
@@ -596,7 +588,7 @@
     transition: background .12s, color .12s; width: 100%;
   }
   #marketing-area .mk-side-nav-item:hover { background: var(--mk-bg-tertiary); color: var(--mk-text-primary); }
-  #marketing-area .mk-side-nav-item.active { background: var(--mk-text-primary); color: #fff; }
+  #marketing-area .mk-side-nav-item.active { background: rgba(0,229,160,.14); color: var(--paper); }
   #marketing-area .mk-side-nav-item.active i, #marketing-area .mk-side-nav-item.active .count { color: rgba(255,255,255,.7); }
   #marketing-area .mk-side-nav-item i { font-size: 15px; color: var(--mk-text-tertiary); }
   #marketing-area .mk-side-nav-item .count {
@@ -734,7 +726,7 @@
     font-family: inherit;
   }
   #marketing-area .mk-tb-btn:hover { background: var(--mk-surface-elevated); color: var(--mk-text-primary); }
-  #marketing-area .mk-tb-btn.active { background: var(--mk-text-primary); color: #fff; }
+  #marketing-area .mk-tb-btn.active { background: var(--accent); color: #0a0a0f; }
   #marketing-area .mk-tb-btn i { font-size: 15px; }
   #marketing-area .mk-tb-sep { width: 1px; height: 18px; background: var(--mk-border-primary); margin: 0 6px; }
   #marketing-area .mk-edit-body {
@@ -815,7 +807,7 @@
   }
   #marketing-area .mk-cat-pick:hover { border-color: var(--mk-border-primary); }
   #marketing-area .mk-cat-pick.active {
-    background: var(--mk-surface-elevated); border-color: var(--mk-text-primary);
+    background: var(--mk-surface-elevated); border-color: var(--accent);
     color: var(--mk-text-primary); font-weight: 500;
   }
   #marketing-area .mk-cat-pick .cat-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
@@ -836,7 +828,7 @@
     border-radius: 50%; color: var(--mk-text-secondary);
     cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0;
   }
-  #marketing-area .mk-tag-chip button:hover { background: rgba(10,10,15,.1); color: var(--mk-text-primary); }
+  #marketing-area .mk-tag-chip button:hover { background: rgba(255,255,255,.08); color: var(--mk-text-primary); }
   #marketing-area .mk-tag-chip i { font-size: 11px; }
   #marketing-area .mk-tag-input-wrap input {
     flex: 1; min-width: 80px; border: none; outline: none;
@@ -849,7 +841,7 @@
   }
   #marketing-area .mk-seo-url { font-size: 11.5px; color: var(--mk-text-secondary); margin-bottom: 2px; word-break: break-all; }
   #marketing-area .mk-seo-url .seo-host { color: var(--mk-text-primary); font-weight: 500; }
-  #marketing-area .mk-seo-title-preview { font-size: 14px; color: #1a0dab; margin-bottom: 2px; line-height: 1.3; }
+  #marketing-area .mk-seo-title-preview { font-size: 14px; color: #8ab4f8; margin-bottom: 2px; line-height: 1.3; }
   #marketing-area .mk-seo-desc-preview { font-size: 11.5px; color: var(--mk-text-secondary); line-height: 1.4; }
   #marketing-area .mk-meta-counter { text-align: right; font-size: 10.5px; color: var(--mk-text-tertiary); margin-top: 4px; font-variant-numeric: tabular-nums; }
   #marketing-area .mk-meta-counter.warn { color: var(--mk-warn-ink); }
@@ -959,87 +951,90 @@
     #marketing-area .mk-main { padding: 1rem; }
   }
 
-  /* Profile modal */
-  #mk-profile-modal {
+  /* Profile modal — single modal shared by every role (admin/suporte/marketing).
+     Opened via openUserProfile() from the .app-user click handler. */
+  #user-profile-modal {
     position: fixed; inset: 0; z-index: 9999;
-    background: rgba(10,10,15,.55);
+    background: rgba(0,0,0,.55);
     display: none; align-items: center; justify-content: center;
     padding: 16px;
   }
-  #mk-profile-modal.open { display: flex; }
-  #mk-profile-modal .mk-modal-card {
-    background: #fff; border-radius: 16px;
+  #user-profile-modal.open { display: flex; }
+  #user-profile-modal .up-card {
+    background: var(--ink2); border: 1px solid var(--border);
+    border-radius: 16px;
     width: 100%; max-width: 380px;
     padding: 28px 24px 22px;
-    box-shadow: 0 24px 60px rgba(0,0,0,.18);
-    font-family: 'DM Sans', system-ui, sans-serif;
+    box-shadow: 0 24px 60px rgba(0,0,0,.45);
+    font-family: var(--font-sans);
     position: relative;
   }
-  #mk-profile-modal .mk-modal-close {
+  #user-profile-modal .up-close {
     position: absolute; top: 12px; right: 12px;
     width: 30px; height: 30px; border: none; background: transparent;
-    color: #5a5a6e; cursor: pointer; font-size: 18px;
+    color: var(--muted); cursor: pointer; font-size: 18px;
     display: flex; align-items: center; justify-content: center;
     border-radius: 50%;
   }
-  #mk-profile-modal .mk-modal-close:hover { background: #f0f0ee; color: #0a0a0f; }
-  #mk-profile-modal .mk-profile-av {
+  #user-profile-modal .up-close:hover { background: var(--ink3); color: var(--paper); }
+  #user-profile-modal .up-av {
     width: 64px; height: 64px; border-radius: 50%;
-    background: linear-gradient(135deg, #00d4aa, #007a63);
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
     color: #0a0a0f;
-    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 22px;
+    font-family: var(--font-head); font-weight: 700; font-size: 22px;
     display: flex; align-items: center; justify-content: center;
     margin: 0 auto 14px;
   }
-  #mk-profile-modal .mk-profile-name {
-    font-family: 'Syne', sans-serif; font-weight: 700;
-    font-size: 18px; color: #0a0a0f; text-align: center;
+  #user-profile-modal .up-name {
+    font-family: var(--font-head); font-weight: 700;
+    font-size: 18px; color: var(--paper); text-align: center;
     letter-spacing: -0.015em; margin: 0 0 4px;
   }
-  #mk-profile-modal .mk-profile-email {
-    font-size: 13px; color: #5a5a6e; text-align: center;
+  #user-profile-modal .up-email {
+    font-size: 13px; color: var(--muted); text-align: center;
     margin: 0 0 14px; word-break: break-all;
   }
-  #mk-profile-modal .mk-profile-role {
-    display: inline-flex; align-items: center; gap: 6px;
+  #user-profile-modal .up-role {
+    display: block; text-align: center;
     margin: 0 auto 20px; padding: 4px 12px;
-    background: #f0f0ee; border-radius: 100px;
-    font-size: 11px; font-weight: 600; color: #0a0a0f;
+    background: var(--ink3); border: 1px solid var(--border2);
+    border-radius: 100px;
+    font-size: 11px; font-weight: 600; color: var(--paper);
     text-transform: uppercase; letter-spacing: 0.08em;
-    width: fit-content; display: block; text-align: center;
+    width: fit-content;
   }
-  #mk-profile-modal .mk-profile-logout {
+  #user-profile-modal .up-role.admin { background: rgba(0,229,160,.14); color: var(--accent); border-color: rgba(0,229,160,.3); }
+  #user-profile-modal .up-logout {
     width: 100%; padding: 11px;
-    background: #0a0a0f; color: #fff; border: none;
+    background: var(--accent); color: #0a0a0f; border: none;
     border-radius: 8px; font-size: 13px; font-weight: 500;
     cursor: pointer; font-family: inherit;
     display: flex; align-items: center; justify-content: center; gap: 6px;
   }
-  #mk-profile-modal .mk-profile-logout:hover { background: #2a2a3a; }
-  #mk-profile-modal .mk-profile-logout i { font-size: 15px; }
+  #user-profile-modal .up-logout:hover { background: var(--accent2); }
+  #user-profile-modal .up-logout i { font-size: 15px; }
 </style>
 
-<div id="marketing-area" style="display:none;">
-  <div class="mk-shell">
-    <aside class="mk-side">
-      <div class="mk-logo">RH<span>C</span></div>
+<div id="marketing-area" class="app-shell" style="display:none;">
+    <aside class="app-side">
+      <div class="app-logo">RH<span>C</span></div>
 
-      <div class="mk-side-section">Marketing</div>
-      <a class="mk-sidenav-link active" data-section="mk-section-dashboard"><i class="ti ti-layout-dashboard"></i>Dashboard</a>
-      <a class="mk-sidenav-link" data-section="mk-section-blog"><i class="ti ti-article"></i>Blog</a>
-      <a class="mk-sidenav-link" data-section="mk-section-newsletter"><i class="ti ti-mail"></i>Newsletter</a>
+      <div class="app-side-section">Marketing</div>
+      <button class="app-sidenav-link active" data-section="mk-section-dashboard"><i class="ti ti-layout-dashboard"></i>Dashboard</button>
+      <button class="app-sidenav-link" data-section="mk-section-blog"><i class="ti ti-article"></i>Blog</button>
+      <button class="app-sidenav-link" data-section="mk-section-newsletter"><i class="ti ti-mail"></i>Newsletter</button>
 
-      <div class="mk-user" id="mk-user-card" title="Ver perfil">
-        <div class="mk-user-av" id="mk-user-av">MK</div>
+      <div class="app-user" id="mk-user-card" title="Ver perfil">
+        <div class="app-user-av" id="mk-user-av">MK</div>
         <div style="min-width:0;flex:1;">
-          <div class="mk-user-name" id="mk-user-name">Marketing</div>
-          <div class="mk-user-role" id="mk-user-role-label">Marketing</div>
+          <div class="app-user-name" id="mk-user-name">Marketing</div>
+          <div class="app-user-role" id="mk-user-role-label">Marketing</div>
         </div>
         <i class="ti ti-chevron-right" style="color:rgba(245,243,239,.35);font-size:14px;"></i>
       </div>
     </aside>
 
-    <main class="mk-main">
+    <main class="app-main">
 
       <!-- ── DASHBOARD ── -->
       <div class="mk-section" id="mk-section-dashboard">
@@ -1327,18 +1322,18 @@
       </div>
 
     </main>
-  </div>
 </div>
 
-<!-- Profile modal — lives outside #marketing-area so its CSS isn't scoped under it. -->
-<div id="mk-profile-modal" onclick="if(event.target.id==='mk-profile-modal') closeMarketingProfile()">
-  <div class="mk-modal-card">
-    <button class="mk-modal-close" onclick="closeMarketingProfile()" aria-label="Fechar"><i class="ti ti-x"></i></button>
-    <div class="mk-profile-av" id="mk-profile-av">MK</div>
-    <h3 class="mk-profile-name" id="mk-profile-name">—</h3>
-    <p class="mk-profile-email" id="mk-profile-email">—</p>
-    <span class="mk-profile-role" id="mk-profile-role">Marketing</span>
-    <button class="mk-profile-logout" onclick="closeMarketingProfile();doLogout();"><i class="ti ti-logout"></i> Sair</button>
+<!-- Shared profile modal — opened by openUserProfile() from any sidebar
+     user card (admin / suporte / marketing). -->
+<div id="user-profile-modal" onclick="if(event.target.id==='user-profile-modal') closeUserProfile()">
+  <div class="up-card">
+    <button class="up-close" onclick="closeUserProfile()" aria-label="Fechar"><i class="ti ti-x"></i></button>
+    <div class="up-av" id="up-av">—</div>
+    <h3 class="up-name" id="up-name">—</h3>
+    <p class="up-email" id="up-email">—</p>
+    <span class="up-role" id="up-role">—</span>
+    <button class="up-logout" onclick="closeUserProfile();doLogout();"><i class="ti ti-logout"></i> Sair</button>
   </div>
 </div>
 
@@ -1598,14 +1593,23 @@ async function enterAdmin() {
   CURRENT_ROLE = (ADMIN.role || 'admin').toLowerCase();
   if(CURRENT_ROLE === 'marketing') {
     document.getElementById('main-page').style.display = 'none';
-    document.getElementById('marketing-area').style.display = 'block';
+    document.getElementById('marketing-area').style.display = 'grid';
     // Skip loadData() — RLS blocks most queries for marketing role.
     // mountMarketingArea() does its own focused fetch on blog_posts.
     try { await mountMarketingArea(); } catch(e) { console.warn('mountMarketingArea failed:', e); }
     return;
   }
-  document.getElementById('main-page').style.display = 'block';
-  document.getElementById('nav-user-name').textContent = ADMIN.name;
+  // Admin/suporte shell uses CSS grid (sidebar + main), not block.
+  document.getElementById('main-page').style.display = 'grid';
+  // Fill the sidebar user card (name, initials, role label).
+  const _av = document.getElementById('nav-user-av');
+  if(_av) _av.textContent = initials(ADMIN.name || ADMIN.email || '?');
+  document.getElementById('nav-user-name').textContent = ADMIN.name || ADMIN.email || '—';
+  const _roleLbl = document.getElementById('nav-user-role-label');
+  if(_roleLbl) _roleLbl.textContent = (CURRENT_ROLE === 'suporte') ? 'Suporte' : 'Admin';
+  // Wire the user card click → open profile modal.
+  const _card = document.getElementById('admin-user-card');
+  if(_card) _card.onclick = openUserProfile;
   applyRoleUI();
   await loadData();
 }
@@ -1621,8 +1625,8 @@ async function enterAdmin() {
 // UX gating so support users don't see buttons they can't actually use.
 function applyRoleUI() {
   const isSupport = CURRENT_ROLE === 'suporte';
-  // Top nav "Admins" tab — hide it for support
-  document.querySelectorAll('.nav-tab').forEach(el => {
+  // Sidebar "Acessos" item — hide it for support
+  document.querySelectorAll('.app-sidenav-link').forEach(el => {
     const onclick = el.getAttribute('onclick') || '';
     if(onclick.includes("'admins'")) {
       el.style.display = isSupport ? 'none' : '';
@@ -1644,37 +1648,15 @@ function applyRoleUI() {
       showTab('companies');
     }
   }
-  // Re-render lists that have role-conditional buttons so the new role takes effect
-  // immediately without needing a refresh. Guard against being called before data
-  // is loaded.
+  // Re-render lists that have role-conditional buttons so the new role takes
+  // effect immediately without needing a refresh. Guard against being called
+  // before data is loaded.
   try {
     if(STATE && STATE.invites && typeof renderInvites === 'function') renderInvites();
     if(STATE && STATE.companies && typeof renderCompanies === 'function') renderCompanies();
   } catch(e) {}
-  // Role badge next to the user name. Admin = green, suporte = solid white
-  // (marketing also uses the white badge — handled in renderAdmins for the
-  //  per-user rows; the nav badge here only ever shows admin/suporte
-  //  because marketing users never reach this code path).
-  const badge = document.getElementById('role-badge');
-  if(badge) {
-    const isEN = (document.documentElement.lang || 'pt') === 'en';
-    badge.textContent = isSupport ? (isEN ? 'SUPPORT' : 'SUPORTE') : 'ADMIN';
-    if(isSupport) {
-      badge.style.background = '#ffffff';
-      badge.style.color = '#1a1a1a';
-      badge.style.border = '1px solid #e0e0e0';
-    } else {
-      badge.style.background = 'rgba(93,202,165,.12)';
-      badge.style.color = '#5DCAA5';
-      badge.style.border = '1px solid rgba(93,202,165,.35)';
-    }
-    badge.style.padding = '2px 8px';
-    badge.style.borderRadius = '6px';
-    badge.style.fontSize = '10px';
-    badge.style.fontWeight = '700';
-    badge.style.letterSpacing = '.5px';
-    badge.style.marginRight = '8px';
-  }
+  // The role label is shown in the sidebar user card — populated by
+  // enterAdmin() at mount time. No more top-right role-badge pill.
 }
 
 // ── DATA ──────────────────────────────────────────
@@ -2061,14 +2043,16 @@ function showTab(tab) {
     return;
   }
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.app-sidenav-link').forEach(t => t.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
   // event may be undefined when called programmatically (e.g. from applyRoleUI)
   if(typeof event !== 'undefined' && event && event.target) {
-    event.target.classList.add('active');
+    // event.target can be the icon inside the button — walk up to .app-sidenav-link
+    const btn = event.target.closest('.app-sidenav-link');
+    if(btn) btn.classList.add('active');
   } else {
-    // Pick the right nav-tab to highlight based on the target tab id
-    const navBtn = Array.from(document.querySelectorAll('.nav-tab')).find(b => {
+    // Pick the right sidebar link to highlight based on the target tab id
+    const navBtn = Array.from(document.querySelectorAll('.app-sidenav-link')).find(b => {
       const oc = b.getAttribute('onclick') || '';
       return oc.includes(`'${tab}'`);
     });
@@ -2602,7 +2586,7 @@ async function mountMarketingArea() {
   document.getElementById('mk-user-role-label').textContent = 'Marketing';
   // Click on the card opens the profile modal (email + logout live there)
   const $card = document.getElementById('mk-user-card');
-  if($card) $card.onclick = openMarketingProfile;
+  if($card) $card.onclick = openUserProfile;
 
   _mkWireNav();
   _mkWireBlog();
@@ -2612,7 +2596,7 @@ async function mountMarketingArea() {
 
 function _mkWireNav() {
   // Section sidebar
-  document.querySelectorAll('#marketing-area .mk-sidenav-link').forEach(a => {
+  document.querySelectorAll('#marketing-area .app-sidenav-link').forEach(a => {
     a.onclick = (e) => { e.preventDefault(); _mkShowSection(a.dataset.section); };
   });
   // Quick-action jumps from dashboard
@@ -2622,7 +2606,7 @@ function _mkWireNav() {
 }
 
 function _mkShowSection(id) {
-  document.querySelectorAll('#marketing-area .mk-sidenav-link').forEach(a =>
+  document.querySelectorAll('#marketing-area .app-sidenav-link').forEach(a =>
     a.classList.toggle('active', a.dataset.section === id));
   document.querySelectorAll('#marketing-area .mk-section').forEach(s =>
     s.hidden = (s.id !== id));
@@ -3117,24 +3101,29 @@ async function _mkUploadFeaturedImage(file) {
   }
 }
 
-// Profile modal — opened from the user card in the sidebar.
-function openMarketingProfile() {
-  const modal = document.getElementById('mk-profile-modal');
-  if(!modal) return;
-  const initials = (ADMIN.name || 'MK').split(' ').map(s=>s[0]||'').slice(0,2).join('').toUpperCase();
-  document.getElementById('mk-profile-av').textContent = initials || 'MK';
-  document.getElementById('mk-profile-name').textContent = ADMIN.name || 'Marketing';
-  document.getElementById('mk-profile-email').textContent = ADMIN.email || '—';
-  document.getElementById('mk-profile-role').textContent = 'Marketing';
+// Shared profile modal — opened from any role's user card. Adapts content
+// to whatever ADMIN object is in scope (name/email/role). Closes on Esc or
+// on backdrop click (the latter is wired inline on the modal element).
+function openUserProfile() {
+  const modal = document.getElementById('user-profile-modal');
+  if(!modal || !ADMIN) return;
+  const initials = (ADMIN.name || ADMIN.email || '?').split(' ').map(s=>s[0]||'').slice(0,2).join('').toUpperCase();
+  document.getElementById('up-av').textContent = initials || '?';
+  document.getElementById('up-name').textContent = ADMIN.name || ADMIN.email || '—';
+  document.getElementById('up-email').textContent = ADMIN.email || '—';
+  const role = (ADMIN.role || 'admin').toLowerCase();
+  const roleLabel = role === 'admin' ? 'Admin' : role === 'marketing' ? 'Marketing' : 'Suporte';
+  const rolePill = document.getElementById('up-role');
+  rolePill.textContent = roleLabel;
+  rolePill.className = 'up-role' + (role === 'admin' ? ' admin' : '');
   modal.classList.add('open');
 }
-function closeMarketingProfile() {
-  const modal = document.getElementById('mk-profile-modal');
+function closeUserProfile() {
+  const modal = document.getElementById('user-profile-modal');
   if(modal) modal.classList.remove('open');
 }
-// Close on Escape
 document.addEventListener('keydown', (e) => {
-  if(e.key === 'Escape') closeMarketingProfile();
+  if(e.key === 'Escape') closeUserProfile();
 });
 
 async function _mkInlineImageUpload() {
