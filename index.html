@@ -869,10 +869,24 @@ function copyLink(link) {
 // ── ENTER AS COMPANY ──────────────────────────────
 function enterAsCompany(orgId, companyNameEncoded) {
   const companyName = decodeURIComponent(companyNameEncoded);
-  localStorage.setItem('rhc_superadmin_impersonate', JSON.stringify({
-    orgId, companyName, adminEmail: ADMIN.email, adminName: ADMIN.name
-  }));
-  window.open(`${RECRUITER_PORTAL}?superadmin=1&org=${orgId}`, '_blank');
+  // Cross-domain handoff: localStorage on admin.rhc.pt is invisible to
+  // portal.rhc.pt, so we encode the admin identity in the URL. The portal
+  // validates the email against its own hardcoded SUPERADMIN_EMAILS list
+  // before honouring the impersonation. We also still write the local
+  // session blob in case any same-origin tooling consumes it.
+  try {
+    localStorage.setItem('rhc_superadmin_impersonate', JSON.stringify({
+      orgId, companyName,
+      adminEmail: (ADMIN && ADMIN.email) || '',
+      adminName:  (ADMIN && ADMIN.name)  || ''
+    }));
+  } catch(e) {}
+  const adminEmail = encodeURIComponent((ADMIN && ADMIN.email) || '');
+  const adminName  = encodeURIComponent((ADMIN && ADMIN.name)  || '');
+  window.open(
+    `${RECRUITER_PORTAL}?superadmin=1&org=${orgId}&adminEmail=${adminEmail}&adminName=${adminName}`,
+    '_blank'
+  );
 }
 
 async function removeCompany(id, nameEncoded) {
