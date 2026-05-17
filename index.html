@@ -460,7 +460,30 @@ const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 
 const RECRUITER_PORTAL = 'https://portal.rhc.pt';
 const CANDIDATE_PORTAL = 'https://rhccandidatos.vercel.app';
-const ADMIN_SESSION_KEY = 'rhc_admin_session';
+const ADMIN_API_BASE   = 'https://portal.rhc.pt';
+
+// React to Supabase Auth session lifecycle. When the JWT expires (default
+// 1h after issue, auto-refreshed while the user is active) or signOut is
+// called, this listener flips the UI back to the login page. We surface a
+// bilingual "session expired" toast only on involuntary expiry — explicit
+// logouts (which also fire SIGNED_OUT) suppress the toast so the user
+// doesn't get a confusing message after clicking "Sair".
+let _explicitLogout = false;
+supa.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_OUT' || (!session && ADMIN)) {
+    const wasLoggedIn = !!ADMIN;
+    ADMIN = null;
+    const mainEl = document.getElementById('main-page');
+    const authEl = document.getElementById('auth-page');
+    if (mainEl) mainEl.style.display = 'none';
+    if (authEl) authEl.style.display = 'flex';
+    if (wasLoggedIn && !_explicitLogout) {
+      const isEN = (document.documentElement.lang || 'pt') === 'en';
+      showToast(isEN ? '⚠️ Session expired' : '⚠️ Sessão expirada');
+    }
+    _explicitLogout = false;
+  }
+});
 
 // Email template builder — keeps every admin-sent email visually identical to those
 // from the recruiter and candidate portals.
@@ -505,6 +528,11 @@ function toggleAdminPass() {
 }
 
 // ── AUTH ──────────────────────────────────────────
+// Login is now backed by Supabase Auth (signInWithPassword). The superadmins
+// table no longer stores or compares passwords — it is purely a profile/role
+// lookup keyed by the authenticated user's email. Sessions live in the
+// Supabase Auth storage (jwt + refresh token) and auto-expire; the
+// onAuthStateChange listener handles the UI reset.
 async function doLogin() {
   const email = document.getElementById('login-email').value.trim().toLowerCase();
   const pass  = document.getElementById('login-pass').value;
@@ -514,18 +542,31 @@ async function doLogin() {
   if(!email || !pass) { showAuthErr('Preenche email e password.'); return; }
 
   try {
-    const { data, error } = await supa
+    const { data: auth, error: authErr } = await supa.auth.signInWithPassword({ email, password: pass });
+    if(authErr || !auth?.user) { showAuthErr('Email ou password incorrectos.'); return; }
+
+    // Profile lookup. RLS on superadmins allows the authenticated user to
+    // read only their own row, so this is intentionally narrow.
+    const { data: profile, error: profErr } = await supa
       .from('superadmins')
-      .select('*')
+      .select('id,name,email,role')
       .eq('email', email)
-      .eq('password', pass)
       .maybeSingle();
 
-    if(error) { showAuthErr('Erro de ligação: ' + error.message); return; }
-    if(!data)  { showAuthErr('Email ou password incorrectos.'); return; }
+    if(profErr) {
+      await supa.auth.signOut();
+      showAuthErr('Erro de ligação: ' + profErr.message);
+      return;
+    }
+    if(!profile) {
+      // Authenticated user has no admin profile — kick them back out and
+      // refuse to mount the panel.
+      await supa.auth.signOut();
+      showAuthErr('Conta sem perfil de admin. Contacta o administrador.');
+      return;
+    }
 
-    ADMIN = data;
-    localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(data));
+    ADMIN = profile;
     enterAdmin();
   } catch(e) {
     showAuthErr('Erro de ligação. Tenta novamente.');
@@ -537,8 +578,11 @@ function showAuthErr(msg) {
   el.textContent = msg; el.style.display = 'block';
 }
 
-function doLogout() {
-  localStorage.removeItem(ADMIN_SESSION_KEY);
+async function doLogout() {
+  // Suppress the "session expired" toast that onAuthStateChange would
+  // otherwise show — this is an explicit user action.
+  _explicitLogout = true;
+  try { await supa.auth.signOut(); } catch(e) { /* still flip UI below */ }
   ADMIN = null;
   document.getElementById('main-page').style.display = 'none';
   document.getElementById('auth-page').style.display = 'flex';
@@ -861,8 +905,38 @@ async function addAdmin() {
   const pass  = document.getElementById('new-admin-pass').value;
   const role  = document.getElementById('new-admin-role')?.value || 'suporte';
   if(!name||!email||pass.length<8) { showToast('⚠️ Preenche todos os campos (password mín. 8 chars)'); return; }
-  const { error } = await supa.from('superadmins').insert({ name, email, password: pass, role });
-  if(error) { showToast('Erro: ' + error.message); return; }
+
+  // Provisioning happens server-side via /api/admin-create-user, which
+  // uses the service-role key to call the Supabase Admin API (createUser)
+  // and then inserts the profile row. The client cannot do this directly
+  // because creating Auth users requires the service-role key, which must
+  // never reach the browser. The endpoint verifies the caller's JWT and
+  // refuses anyone other than the hardcoded super-admin.
+  let token = null;
+  try {
+    const { data: { session } } = await supa.auth.getSession();
+    token = session?.access_token || null;
+  } catch(e) {}
+  if(!token) { showToast('⚠️ Sessão inválida — volta a fazer login'); return; }
+
+  let result;
+  try {
+    const r = await fetch(`${ADMIN_API_BASE}/api/admin-create-user`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ name, email, password: pass, role })
+    });
+    if(r.status === 403) { showToast('⚠️ Sem permissões (apenas o super-admin pode criar contas)'); return; }
+    if(r.status === 401) { showToast('⚠️ Sessão inválida — volta a fazer login'); return; }
+    result = await r.json().catch(() => ({}));
+  } catch(e) {
+    showToast('Erro de ligação ao servidor');
+    return;
+  }
+  if(!result || result.success !== true) {
+    showToast('Erro: ' + (result?.error || 'falha ao criar conta'));
+    return;
+  }
   closeModal('modal-add-admin');
   ['new-admin-name','new-admin-email','new-admin-pass'].forEach(id => document.getElementById(id).value='');
   const rLabel = role === 'admin' ? 'Admin' : 'Suporte';
@@ -1315,14 +1389,28 @@ function showToast(msg, opts) {
 }
 
 // ── BOOT ──────────────────────────────────────────
-(function() {
-  const saved = localStorage.getItem(ADMIN_SESSION_KEY);
-  if(saved) {
-    try {
-      ADMIN = JSON.parse(saved);
-      enterAdmin();
-    } catch(e) { localStorage.removeItem(ADMIN_SESSION_KEY); }
-  }
+// Auto-resume an existing Supabase Auth session (jwt persisted by the SDK
+// in localStorage under a `sb-*` key). If the session is valid we fetch the
+// admin profile and mount the panel; otherwise we leave the login form up.
+(async function() {
+  try {
+    const { data: { session } } = await supa.auth.getSession();
+    if(!session?.user?.email) return;
+    const { data: profile } = await supa
+      .from('superadmins')
+      .select('id,name,email,role')
+      .eq('email', session.user.email)
+      .maybeSingle();
+    if(!profile) {
+      // Stale auth user with no matching admin profile — sign them out so
+      // we don't leak a half-mounted UI.
+      _explicitLogout = true;
+      await supa.auth.signOut();
+      return;
+    }
+    ADMIN = profile;
+    enterAdmin();
+  } catch(e) { /* leave login form visible */ }
 })();
 </script>
 </body>
