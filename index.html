@@ -600,7 +600,13 @@ async function enterAdmin() {
 }
 
 // Hide/show navigation items + buttons based on CURRENT_ROLE.
-// Suporte: tickets only — no Admins page, no add/remove buttons.
+// Suporte permissions:
+//   - Empresas: view + enter, no delete
+//   - Convites: read-only (no create / no cancel)
+//   - Acessos: hidden tab + bounce if landed there
+//   - Tickets: full access (unchanged)
+// Real authorisation lives in RLS policies on the Supabase tables; this is
+// UX gating so support users don't see buttons they can't actually use.
 function applyRoleUI() {
   const isSupport = CURRENT_ROLE === 'suporte';
   // Top nav "Admins" tab — hide it for support
@@ -614,20 +620,40 @@ function applyRoleUI() {
   document.querySelectorAll('.invite-btn').forEach(el => {
     el.style.display = isSupport ? 'none' : '';
   });
-  // If support lands on the admins tab somehow, bounce them to tickets
+  // Hide "+ Adicionar acesso" button (only matters if the panel somehow becomes visible)
+  document.querySelectorAll('[onclick*="modal-add-admin"]').forEach(el => {
+    el.style.display = isSupport ? 'none' : '';
+  });
+  // If support lands on the admins tab (stale state from a previous admin session),
+  // bounce to Empresas — the spec landing page for the support role.
   if(isSupport) {
-    const adminsPanel = document.getElementById('panel-admins');
-    if(adminsPanel && adminsPanel.style.display !== 'none' && typeof showTab === 'function') {
-      showTab('tickets');
+    const adminsPanel = document.getElementById('tab-admins');
+    if(adminsPanel && adminsPanel.classList.contains('active') && typeof showTab === 'function') {
+      showTab('companies');
     }
   }
-  // Role badge next to the user name
+  // Re-render lists that have role-conditional buttons so the new role takes effect
+  // immediately without needing a refresh. Guard against being called before data
+  // is loaded.
+  try {
+    if(STATE && STATE.invites && typeof renderInvites === 'function') renderInvites();
+    if(STATE && STATE.companies && typeof renderCompanies === 'function') renderCompanies();
+  } catch(e) {}
+  // Role badge next to the user name. Admin = green, suporte = solid white (so a
+  // glance instantly tells you which kind of user is logged in).
   const badge = document.getElementById('role-badge');
   if(badge) {
-    badge.textContent = isSupport ? 'SUPORTE' : 'ADMIN';
-    badge.style.background = 'rgba(93,202,165,.12)';
-    badge.style.color = '#5DCAA5';
-    badge.style.border = '1px solid rgba(93,202,165,.35)';
+    const isEN = (document.documentElement.lang || 'pt') === 'en';
+    badge.textContent = isSupport ? (isEN ? 'SUPPORT' : 'SUPORTE') : 'ADMIN';
+    if(isSupport) {
+      badge.style.background = '#ffffff';
+      badge.style.color = '#1a1a1a';
+      badge.style.border = '1px solid #e0e0e0';
+    } else {
+      badge.style.background = 'rgba(93,202,165,.12)';
+      badge.style.color = '#5DCAA5';
+      badge.style.border = '1px solid rgba(93,202,165,.35)';
+    }
     badge.style.padding = '2px 8px';
     badge.style.borderRadius = '6px';
     badge.style.fontSize = '10px';
@@ -740,24 +766,28 @@ function renderInvites() {
       <div><span class="status-pill ${inv.used?'pill-used':'pill-pending'}">${inv.used?'Usado':'Pendente'}</span></div>
       <div style="display:flex;gap:5px;">
         <button class="action-btn" onclick="copyLink('${link}')">📋 Link</button>
-        ${!inv.used ? `<button class="action-btn danger" onclick="cancelInvite('${inv.id}')">Cancelar</button>` : ''}
+        ${!inv.used && CURRENT_ROLE === 'admin' ? `<button class="action-btn danger" onclick="cancelInvite('${inv.id}')">Cancelar</button>` : ''}
       </div>
     </div>`; }).join('');
 }
 
 function renderAdmins() {
   const body = document.getElementById('admins-body');
+  const isEN = (document.documentElement.lang || 'pt') === 'en';
   body.innerHTML = STATE.admins.map(a => {
     const role = (a.role || 'admin').toLowerCase();
     const isAdmin = role === 'admin';
-    const roleLabel = isAdmin ? 'ADMIN' : 'SUPORTE';
-    // Both badges in green but the support one is slightly lighter to keep them distinguishable
-    const badgeBg = isAdmin ? 'rgba(93,202,165,.20)' : 'rgba(93,202,165,.10)';
+    const roleLabel = isAdmin ? 'ADMIN' : (isEN ? 'SUPPORT' : 'SUPORTE');
+    // Admin keeps the green pill; suporte uses a solid white pill so the two
+    // are instantly distinguishable at a glance (matches the nav badge variant).
+    const badgeStyle = isAdmin
+      ? 'background:rgba(93,202,165,.20);color:#5DCAA5;border:1px solid rgba(93,202,165,.35);'
+      : 'background:#ffffff;color:#1a1a1a;border:1px solid #e0e0e0;';
     return `
     <div class="table-row" style="grid-template-columns:2fr 2fr 1fr 1fr;">
       <div style="font-size:13px;color:#ddd;">${a.name}</div>
       <div style="font-size:13px;color:#aaa;">${a.email}</div>
-      <div><span style="background:${badgeBg};color:#5DCAA5;border:1px solid rgba(93,202,165,.35);font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 9px;border-radius:6px;">${roleLabel}</span></div>
+      <div><span style="${badgeStyle}font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 9px;border-radius:6px;">${roleLabel}</span></div>
       <div>
         ${a.email !== ADMIN.email ? `<button class="action-btn danger" onclick="removeAdmin('${a.id}','${encodeURIComponent(a.name||'')}')">Remover</button>` : '<span style="font-size:11px;color:#555;">Tu</span>'}
       </div>
@@ -964,10 +994,27 @@ async function removeAdmin(id, nameEncoded) {
 
 // ── UI HELPERS ────────────────────────────────────
 function showTab(tab) {
+  // Defence in depth: suporte must not see the Acessos tab even via a stale
+  // URL/hash, a programmatic call, or DevTools. Real authorisation is in RLS,
+  // but we still bounce here so the UI never enters a state it shouldn't.
+  if(tab === 'admins' && CURRENT_ROLE === 'suporte') {
+    showToast('⚠️ Sem permissões para esta página');
+    tab = 'companies';
+  }
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
-  event.target.classList.add('active');
+  // event may be undefined when called programmatically (e.g. from applyRoleUI)
+  if(typeof event !== 'undefined' && event && event.target) {
+    event.target.classList.add('active');
+  } else {
+    // Pick the right nav-tab to highlight based on the target tab id
+    const navBtn = Array.from(document.querySelectorAll('.nav-tab')).find(b => {
+      const oc = b.getAttribute('onclick') || '';
+      return oc.includes(`'${tab}'`);
+    });
+    if(navBtn) navBtn.classList.add('active');
+  }
   if(tab === 'tickets') renderTickets();
 }
 
