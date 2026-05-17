@@ -355,6 +355,16 @@
   </div>
 </div>
 
+<!-- MARKETING AREA — Fase 3 replaces this placeholder with the real panel. -->
+<div id="marketing-area" style="display:none;min-height:100vh;background:#f6f6f4;padding:80px 24px;text-align:center;">
+  <div style="max-width:560px;margin:0 auto;">
+    <div style="font-size:42px;margin-bottom:18px;">🚧</div>
+    <h2 style="font-family:var(--font-head,system-ui);font-size:22px;font-weight:700;color:#0a0a0f;margin:0 0 10px;">Painel de Marketing — em construção</h2>
+    <p style="font-size:14px;color:#5a5a6e;line-height:1.6;margin:0 0 24px;">A área de Dashboard, Blog e Newsletter será adicionada em breve. A tua conta marketing já está activa.</p>
+    <button onclick="doLogout()" style="background:#0a0a0f;color:#fff;border:none;border-radius:8px;padding:10px 22px;font-size:13px;font-weight:500;cursor:pointer;">Sair</button>
+  </div>
+</div>
+
 <!-- MODAL: TICKET DETAIL -->
 <div class="modal-bg" id="modal-ticket" onclick="void(0)">
   <div class="modal" style="max-width:760px;width:92vw;" onclick="event.stopPropagation()">
@@ -430,6 +440,7 @@
       <select class="form-input" id="new-admin-role">
         <option value="suporte" selected>Suporte (acesso limitado)</option>
         <option value="admin">Admin (acesso total)</option>
+        <option value="marketing">Marketing (blog e newsletter)</option>
       </select>
     </div>
     <button class="btn-primary" onclick="addAdmin()">Adicionar</button>
@@ -486,7 +497,9 @@ supa.auth.onAuthStateChange((event, session) => {
     ADMIN = null;
     const mainEl = document.getElementById('main-page');
     const authEl = document.getElementById('auth-page');
+    const mkEl   = document.getElementById('marketing-area');
     if (mainEl) mainEl.style.display = 'none';
+    if (mkEl)   mkEl.style.display = 'none';
     if (authEl) authEl.style.display = 'flex';
     if (wasLoggedIn && !_explicitLogout) {
       const isEN = (document.documentElement.lang || 'pt') === 'en';
@@ -596,26 +609,36 @@ async function doLogout() {
   try { await supa.auth.signOut(); } catch(e) { /* still flip UI below */ }
   ADMIN = null;
   document.getElementById('main-page').style.display = 'none';
+  const mk = document.getElementById('marketing-area');
+  if(mk) mk.style.display = 'none';
   document.getElementById('auth-page').style.display = 'flex';
 }
 
 async function enterAdmin() {
   document.getElementById('auth-page').style.display = 'none';
+  // Pick up the role first — marketing users never see the admin panel at
+  // all, they're sent to the marketing-area instead.
+  CURRENT_ROLE = (ADMIN.role || 'admin').toLowerCase();
+  if(CURRENT_ROLE === 'marketing') {
+    document.getElementById('main-page').style.display = 'none';
+    document.getElementById('marketing-area').style.display = 'block';
+    // Skip loadData() — RLS would block most queries for marketing role
+    // and there's nothing for the placeholder to display anyway.
+    return;
+  }
   document.getElementById('main-page').style.display = 'block';
   document.getElementById('nav-user-name').textContent = ADMIN.name;
-  // Pick up the role from the row; default to 'admin' so legacy users (no role column)
-  // keep their full access — this matches the SQL DEFAULT 'admin' as well.
-  CURRENT_ROLE = (ADMIN.role || 'admin').toLowerCase();
   applyRoleUI();
   await loadData();
 }
 
 // Hide/show navigation items + buttons based on CURRENT_ROLE.
-// Suporte permissions:
-//   - Empresas: view + enter, no delete
-//   - Convites: read-only (no create / no cancel)
-//   - Acessos: hidden tab + bounce if landed there
-//   - Tickets: full access (unchanged)
+// Roles and permissions:
+//   admin     — full access to every tab and action.
+//   suporte   — Empresas (view+enter, no delete), Convites (read-only),
+//               Tickets (full), Acessos (hidden).
+//   marketing — never enters this panel; handled by enterAdmin which
+//               sends them to #marketing-area. applyRoleUI is not called.
 // Real authorisation lives in RLS policies on the Supabase tables; this is
 // UX gating so support users don't see buttons they can't actually use.
 function applyRoleUI() {
@@ -650,8 +673,10 @@ function applyRoleUI() {
     if(STATE && STATE.invites && typeof renderInvites === 'function') renderInvites();
     if(STATE && STATE.companies && typeof renderCompanies === 'function') renderCompanies();
   } catch(e) {}
-  // Role badge next to the user name. Admin = green, suporte = solid white (so a
-  // glance instantly tells you which kind of user is logged in).
+  // Role badge next to the user name. Admin = green, suporte = solid white
+  // (marketing also uses the white badge — handled in renderAdmins for the
+  //  per-user rows; the nav badge here only ever shows admin/suporte
+  //  because marketing users never reach this code path).
   const badge = document.getElementById('role-badge');
   if(badge) {
     const isEN = (document.documentElement.lang || 'pt') === 'en';
@@ -788,12 +813,20 @@ function renderAdmins() {
   body.innerHTML = STATE.admins.map(a => {
     const role = (a.role || 'admin').toLowerCase();
     const isAdmin = role === 'admin';
-    const roleLabel = isAdmin ? 'ADMIN' : (isEN ? 'SUPPORT' : 'SUPORTE');
-    // Admin keeps the green pill; suporte uses a solid white pill so the two
-    // are instantly distinguishable at a glance (matches the nav badge variant).
-    const badgeStyle = isAdmin
-      ? 'background:rgba(93,202,165,.20);color:#5DCAA5;border:1px solid rgba(93,202,165,.35);'
-      : 'background:#ffffff;color:#1a1a1a;border:1px solid #e0e0e0;';
+    // Admin keeps the green pill; suporte AND marketing use a solid white
+    // pill (only the label differs). Anything we don't know defaults to the
+    // suporte styling so the row is still readable.
+    let roleLabel, badgeStyle;
+    if(isAdmin) {
+      roleLabel = 'ADMIN';
+      badgeStyle = 'background:rgba(93,202,165,.20);color:#5DCAA5;border:1px solid rgba(93,202,165,.35);';
+    } else if(role === 'marketing') {
+      roleLabel = isEN ? 'MARKETING' : 'MARKETING';
+      badgeStyle = 'background:#ffffff;color:#1a1a1a;border:1px solid #e0e0e0;';
+    } else {
+      roleLabel = isEN ? 'SUPPORT' : 'SUPORTE';
+      badgeStyle = 'background:#ffffff;color:#1a1a1a;border:1px solid #e0e0e0;';
+    }
     return `
     <div class="table-row" style="grid-template-columns:2fr 2fr 1fr 1fr;">
       <div style="font-size:13px;color:#ddd;">${a.name}</div>
@@ -1012,7 +1045,7 @@ async function addAdmin() {
   }
   closeModal('modal-add-admin');
   ['new-admin-name','new-admin-email','new-admin-pass'].forEach(id => document.getElementById(id).value='');
-  const rLabel = role === 'admin' ? 'Admin' : 'Suporte';
+  const rLabel = role === 'admin' ? 'Admin' : role === 'marketing' ? 'Marketing' : 'Suporte';
   showToast('✓ ' + rLabel + ' adicionado');
   await loadData();
 }
@@ -1037,12 +1070,17 @@ async function removeAdmin(id, nameEncoded) {
 
 // ── UI HELPERS ────────────────────────────────────
 function showTab(tab) {
-  // Defence in depth: suporte must not see the Acessos tab even via a stale
-  // URL/hash, a programmatic call, or DevTools. Real authorisation is in RLS,
-  // but we still bounce here so the UI never enters a state it shouldn't.
+  // Defence in depth: suporte must not see the Acessos tab, marketing must
+  // not see ANY admin tab. The UI normally hides them, but a programmatic
+  // call or DevTools tweak could still try — bounce + toast.
   if(tab === 'admins' && CURRENT_ROLE === 'suporte') {
     showToast('⚠️ Sem permissões para esta página');
     tab = 'companies';
+  }
+  if(CURRENT_ROLE === 'marketing') {
+    // Marketing users live in #marketing-area, not the admin panel at all.
+    showToast('⚠️ Sem permissões para esta página');
+    return;
   }
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
