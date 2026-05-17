@@ -462,6 +462,17 @@ const RECRUITER_PORTAL = 'https://portal.rhc.pt';
 const CANDIDATE_PORTAL = 'https://rhccandidatos.vercel.app';
 const ADMIN_API_BASE   = 'https://portal.rhc.pt';
 
+// Returns the "Bearer <jwt>" header value for the current Supabase Auth
+// session, or null if the session is gone. Required by every authenticated
+// /api/* call (send-email, admin-create-user, ...).
+async function _supaAuthHeader() {
+  try {
+    const { data: { session } } = await supa.auth.getSession();
+    const token = session && session.access_token;
+    return token ? ('Bearer ' + token) : null;
+  } catch (e) { return null; }
+}
+
 // React to Supabase Auth session lifecycle. When the JWT expires (default
 // 1h after issue, auto-refreshed while the user is active) or signOut is
 // called, this listener flips the UI back to the login page. We surface a
@@ -820,10 +831,13 @@ async function generateInvite() {
   // Send email via Resend if email provided
   if(email) {
     try {
+      const _emHdr = await _supaAuthHeader();
+      if(!_emHdr) { showToast('⚠️ Sessão inválida — volta a fazer login'); return; }
       const emailRes = await fetch('https://rhcportal.vercel.app/api/send-email', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': _emHdr
         },
         body: JSON.stringify({
           from: 'RHC Team <convites@rhc.pt>',
@@ -1316,9 +1330,11 @@ async function replyTicket() {
   // Send email with reply via Resend
   const isEN = _currentTicket.lang === 'en';
   try {
+    const _emHdr = await _supaAuthHeader();
+    if(!_emHdr) { showToast('⚠️ Sessão inválida — volta a fazer login'); return; }
     await fetch('https://rhcportal.vercel.app/api/send-email', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': _emHdr },
       body: JSON.stringify({
         from: 'RHC Suporte <noreply@rhc.pt>',
         to: [_currentTicket.email],
@@ -1394,9 +1410,11 @@ async function _doResendInvite() {
   const firstName = (_currentTicket.name||'Candidate').split(' ')[0];
 
   // Send new invite email
+  const _emHdr = await _supaAuthHeader();
+  if(!_emHdr) { showToast('⚠️ Sessão inválida — volta a fazer login'); return; }
   await fetch('https://rhcportal.vercel.app/api/send-email', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': _emHdr },
     body: JSON.stringify({
       from: 'RHC Recrutamento <noreply@rhc.pt>',
       to: [_currentTicket.email],
