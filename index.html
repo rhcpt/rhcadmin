@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RHC Admin</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
   :root {
@@ -355,13 +356,915 @@
   </div>
 </div>
 
-<!-- MARKETING AREA — Fase 3 replaces this placeholder with the real panel. -->
-<div id="marketing-area" style="display:none;min-height:100vh;background:#f6f6f4;padding:80px 24px;text-align:center;">
-  <div style="max-width:560px;margin:0 auto;">
-    <div style="font-size:42px;margin-bottom:18px;">🚧</div>
-    <h2 style="font-family:var(--font-head,system-ui);font-size:22px;font-weight:700;color:#0a0a0f;margin:0 0 10px;">Painel de Marketing — em construção</h2>
-    <p style="font-size:14px;color:#5a5a6e;line-height:1.6;margin:0 0 24px;">A área de Dashboard, Blog e Newsletter será adicionada em breve. A tua conta marketing já está activa.</p>
-    <button onclick="doLogout()" style="background:#0a0a0f;color:#fff;border:none;border-radius:8px;padding:10px 22px;font-size:13px;font-weight:500;cursor:pointer;">Sair</button>
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║  MARKETING AREA                                              ║
+     ║  Mounted by enterAdmin() when CURRENT_ROLE === 'marketing'.  ║
+     ║  Replaces the admin panel entirely (NOT overlaid on it).     ║
+     ║  All CSS is namespaced under #marketing-area to avoid        ║
+     ║  bleeding into the dark admin shell.                         ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+<style>
+  /* Design tokens scoped to the marketing area only. */
+  #marketing-area {
+    --mk-font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
+    --mk-font-display: 'Syne', sans-serif;
+    --mk-bg-primary: #ffffff;
+    --mk-bg-secondary: #f6f6f4;
+    --mk-bg-tertiary: #f0f0ee;
+    --mk-bg-inverse: #0a0a0f;
+    --mk-surface-elevated: #ffffff;
+    --mk-surface-muted: #fafaf8;
+    --mk-text-primary: #0a0a0f;
+    --mk-text-secondary: #5a5a6e;
+    --mk-text-tertiary: #9494a3;
+    --mk-text-inverse: #f5f3ef;
+    --mk-border-primary: rgba(10,10,15,0.12);
+    --mk-border-secondary: rgba(10,10,15,0.08);
+    --mk-border-tertiary: rgba(10,10,15,0.06);
+    --mk-accent: #00a584;
+    --mk-accent-soft: #e6f9f3;
+    --mk-accent-ink: #054a3c;
+    --mk-success: #0F6E56;
+    --mk-success-soft: #E1F5EE;
+    --mk-warn-ink: #854F0B;
+    --mk-warn-soft: #FAEEDA;
+    --mk-info-ink: #1e4d8f;
+    --mk-info-soft: #E3EEFB;
+    --mk-cat-ai: #00a584;
+    --mk-cat-cand: #378ADD;
+    --mk-cat-gdpr: #EF9F27;
+    --mk-cat-prod: #B264E0;
+    --mk-radius-sm: 6px;
+    --mk-radius-md: 8px;
+    --mk-radius-lg: 12px;
+    --mk-radius-xl: 16px;
+    --mk-shadow-sm: 0 1px 2px rgba(10,10,15,.04), 0 1px 1px rgba(10,10,15,.03);
+    --mk-shadow-md: 0 4px 12px rgba(10,10,15,.04), 0 2px 4px rgba(10,10,15,.03);
+    --mk-shadow-lg: 0 16px 40px rgba(10,10,15,.08), 0 4px 12px rgba(10,10,15,.04);
+    font-family: var(--mk-font-sans);
+    background: var(--mk-bg-secondary);
+    color: var(--mk-text-primary);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  #marketing-area *, #marketing-area *::before, #marketing-area *::after { box-sizing: border-box; }
+  #marketing-area button { font-family: inherit; }
+  #marketing-area input, #marketing-area select, #marketing-area textarea { font-family: inherit; }
+
+  #marketing-area input[type="text"], #marketing-area input[type="email"], #marketing-area input[type="url"],
+  #marketing-area select, #marketing-area textarea {
+    background: var(--mk-surface-elevated);
+    border: 1px solid var(--mk-border-secondary);
+    border-radius: var(--mk-radius-md);
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--mk-text-primary);
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+    width: 100%;
+  }
+  #marketing-area input[type="text"]:focus, #marketing-area input[type="email"]:focus,
+  #marketing-area input[type="url"]:focus, #marketing-area select:focus, #marketing-area textarea:focus {
+    border-color: var(--mk-accent);
+    box-shadow: 0 0 0 3px rgba(0,165,132,.12);
+  }
+  #marketing-area select {
+    appearance: none; cursor: pointer;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a5a6e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat: no-repeat; background-position: right 10px center;
+    padding-right: 30px;
+  }
+
+  /* Shell */
+  #marketing-area .mk-shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+  #marketing-area .mk-side {
+    background: #0a0a0f; color: rgba(245,243,239,.7);
+    padding: 1.3rem 1rem; position: sticky; top: 0; height: 100vh;
+    display: flex; flex-direction: column;
+  }
+  #marketing-area .mk-logo {
+    font-family: var(--mk-font-display); font-weight: 800; font-size: 1.4rem;
+    color: #fff; letter-spacing: -0.04em; margin: 0 0 1.6rem .4rem;
+  }
+  #marketing-area .mk-logo span { color: #00d4aa; }
+  #marketing-area .mk-side-section {
+    font-family: var(--mk-font-display); font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.14em;
+    color: rgba(245,243,239,.35); margin: 1.2rem .6rem .4rem;
+  }
+  #marketing-area .mk-side a {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px; color: rgba(245,243,239,.6); text-decoration: none;
+    font-size: 13px; border-radius: var(--mk-radius-md); margin-bottom: 2px;
+    cursor: pointer;
+  }
+  #marketing-area .mk-side a:hover { background: rgba(255,255,255,.04); color: #fff; }
+  #marketing-area .mk-side a.active { background: rgba(0,212,170,.12); color: #fff; }
+  #marketing-area .mk-side a.active i { color: #00d4aa; }
+  #marketing-area .mk-side a i { font-size: 16px; color: rgba(245,243,239,.5); }
+  #marketing-area .mk-user {
+    margin-top: auto; padding: 10px 12px;
+    display: flex; align-items: center; gap: 10px;
+    border-radius: var(--mk-radius-md);
+    background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06);
+  }
+  #marketing-area .mk-user-av {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: linear-gradient(135deg, #00d4aa, #007a63); color: #0a0a0f;
+    font-family: var(--mk-font-display); font-weight: 700; font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #marketing-area .mk-user-name { font-size: 13px; color: #fff; line-height: 1.2; }
+  #marketing-area .mk-user-role { font-size: 11px; color: rgba(245,243,239,.45); }
+  #marketing-area .mk-logout {
+    width: 100%; margin-top: 8px; background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08); color: rgba(245,243,239,.7);
+    padding: 7px 10px; border-radius: var(--mk-radius-md);
+    font-size: 12px; cursor: pointer; transition: background .12s, color .12s;
+  }
+  #marketing-area .mk-logout:hover { background: rgba(255,255,255,.08); color: #fff; }
+
+  #marketing-area .mk-main { padding: 1.4rem 1.8rem 3rem; max-width: 1280px; }
+
+  /* Sub-tabs (Blog list/editor) */
+  #marketing-area .mk-tabs {
+    display: flex; gap: 4px; margin-bottom: 1.4rem; padding: 4px;
+    background: var(--mk-bg-tertiary); border-radius: var(--mk-radius-md); width: fit-content;
+  }
+  #marketing-area .mk-tab {
+    background: transparent; border: none; padding: 7px 14px;
+    font-size: 13px; font-weight: 500; color: var(--mk-text-secondary);
+    border-radius: var(--mk-radius-sm); cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+  }
+  #marketing-area .mk-tab.active {
+    background: var(--mk-surface-elevated); color: var(--mk-text-primary);
+    box-shadow: var(--mk-shadow-sm);
+  }
+  #marketing-area .mk-tab i { font-size: 15px; }
+
+  /* Buttons */
+  #marketing-area .mk-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; font-size: 13px; font-weight: 500;
+    border-radius: var(--mk-radius-md); border: 1px solid transparent;
+    background: transparent; color: var(--mk-text-primary);
+    cursor: pointer; transition: background .15s, border-color .15s;
+    line-height: 1; white-space: nowrap;
+  }
+  #marketing-area .mk-btn i { font-size: 15px; }
+  #marketing-area .mk-btn:hover { background: var(--mk-bg-tertiary); }
+  #marketing-area .mk-btn:disabled { opacity: .5; cursor: not-allowed; }
+  #marketing-area .mk-btn:disabled:hover { background: transparent; }
+  #marketing-area .mk-btn-ghost { border-color: var(--mk-border-secondary); color: var(--mk-text-secondary); }
+  #marketing-area .mk-btn-ghost:hover { background: var(--mk-bg-secondary); border-color: var(--mk-border-primary); color: var(--mk-text-primary); }
+  #marketing-area .mk-btn-primary { background: var(--mk-text-primary); color: var(--mk-bg-primary); padding: 9px 16px; }
+  #marketing-area .mk-btn-primary:hover { background: #2a2a3a; }
+  #marketing-area .mk-btn-accent { background: var(--mk-accent); color: #fff; }
+  #marketing-area .mk-btn-accent:hover { background: var(--mk-accent-ink); }
+  #marketing-area .mk-btn-icon {
+    width: 32px; height: 32px; padding: 0; justify-content: center;
+    color: var(--mk-text-secondary); border: 1px solid transparent;
+    border-radius: var(--mk-radius-md);
+  }
+  #marketing-area .mk-btn-icon:hover { background: var(--mk-bg-tertiary); color: var(--mk-text-primary); }
+
+  /* Section visibility */
+  #marketing-area .mk-section[hidden] { display: none; }
+  #marketing-area .mk-view { display: none; }
+  #marketing-area .mk-view.active { display: block; }
+
+  /* Page header */
+  #marketing-area .mk-page-head { display: flex; align-items: center; gap: 14px; margin-bottom: 1.4rem; }
+  #marketing-area .mk-page-head-icon {
+    width: 40px; height: 40px; border-radius: var(--mk-radius-md);
+    background: var(--mk-bg-inverse); color: var(--mk-accent);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  #marketing-area .mk-page-head-icon i { font-size: 20px; }
+  #marketing-area .mk-page-head-title h1 {
+    font-family: var(--mk-font-display); font-size: 22px; font-weight: 700;
+    letter-spacing: -0.02em; margin: 0; color: var(--mk-text-primary);
+  }
+  #marketing-area .mk-page-head-title p { margin: 2px 0 0; font-size: 13px; color: var(--mk-text-secondary); }
+  #marketing-area .mk-page-head-actions { margin-left: auto; display: flex; gap: 8px; }
+
+  /* Stat strip */
+  #marketing-area .mk-stat-strip {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+    background: var(--mk-surface-elevated); border: 1px solid var(--mk-border-secondary);
+    border-radius: var(--mk-radius-lg); overflow: hidden; margin-bottom: 1.4rem;
+  }
+  #marketing-area .mk-stat-cell {
+    padding: 14px 18px; border-left: 1px solid var(--mk-border-secondary);
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  #marketing-area .mk-stat-cell:first-child { border-left: none; }
+  #marketing-area .mk-stat-cell .lbl {
+    font-size: 11px; font-weight: 500; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--mk-text-tertiary);
+    display: flex; align-items: center; gap: 6px;
+  }
+  #marketing-area .mk-stat-cell .lbl i { font-size: 13px; }
+  #marketing-area .mk-stat-cell .num {
+    font-family: var(--mk-font-display); font-size: 24px; font-weight: 700;
+    letter-spacing: -0.03em; color: var(--mk-text-primary); line-height: 1;
+  }
+  #marketing-area .mk-stat-cell .delta { font-size: 11px; color: var(--mk-text-secondary); }
+  #marketing-area .mk-stat-cell .delta.up { color: var(--mk-success); }
+
+  /* List grid */
+  #marketing-area .mk-list-grid { display: grid; grid-template-columns: 210px 1fr; gap: 1.5rem; }
+
+  /* Side nav */
+  #marketing-area .mk-side-nav { display: flex; flex-direction: column; gap: 2px; }
+  #marketing-area .mk-side-nav-section {
+    font-size: 11px; font-weight: 500; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--mk-text-tertiary); margin: 1.4rem 12px .4rem;
+  }
+  #marketing-area .mk-side-nav-section:first-child { margin-top: .2rem; }
+  #marketing-area .mk-side-nav-item {
+    text-align: left; background: transparent; border: none;
+    padding: 7px 12px; font-size: 13px; color: var(--mk-text-secondary);
+    border-radius: var(--mk-radius-md); cursor: pointer;
+    display: flex; align-items: center; gap: 10px;
+    transition: background .12s, color .12s; width: 100%;
+  }
+  #marketing-area .mk-side-nav-item:hover { background: var(--mk-bg-tertiary); color: var(--mk-text-primary); }
+  #marketing-area .mk-side-nav-item.active { background: var(--mk-text-primary); color: #fff; }
+  #marketing-area .mk-side-nav-item.active i, #marketing-area .mk-side-nav-item.active .count { color: rgba(255,255,255,.7); }
+  #marketing-area .mk-side-nav-item i { font-size: 15px; color: var(--mk-text-tertiary); }
+  #marketing-area .mk-side-nav-item .count {
+    margin-left: auto; font-size: 11px; font-weight: 500;
+    color: var(--mk-text-tertiary); background: var(--mk-bg-tertiary);
+    padding: 2px 7px; border-radius: 100px; min-width: 22px; text-align: center;
+  }
+  #marketing-area .mk-side-nav-item.active .count { background: rgba(255,255,255,.15); color: #fff; }
+  #marketing-area .mk-cat-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+  /* List toolbar */
+  #marketing-area .mk-list-toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; }
+  #marketing-area .mk-search-wrap { position: relative; flex: 1; }
+  #marketing-area .mk-search-wrap i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 16px; color: var(--mk-text-tertiary); }
+  #marketing-area .mk-search-wrap input { padding-left: 36px; }
+
+  /* Posts list */
+  #marketing-area .mk-post-list { display: flex; flex-direction: column; gap: 6px; }
+  #marketing-area .mk-post-card {
+    background: var(--mk-surface-elevated); border: 1px solid var(--mk-border-secondary);
+    border-radius: var(--mk-radius-lg); padding: 12px 14px 12px 0;
+    cursor: pointer; transition: border-color .15s, box-shadow .15s;
+    display: flex; align-items: stretch; gap: 14px;
+    position: relative; overflow: hidden;
+  }
+  #marketing-area .mk-post-card:hover { border-color: var(--mk-border-primary); box-shadow: var(--mk-shadow-md); }
+  #marketing-area .mk-post-card .accent-bar { width: 3px; background: var(--bar-color, transparent); border-radius: 0 2px 2px 0; flex-shrink: 0; }
+  #marketing-area .mk-post-card.cat-ai_screening { --bar-color: var(--mk-cat-ai); }
+  #marketing-area .mk-post-card.cat-candidate_experience { --bar-color: var(--mk-cat-cand); }
+  #marketing-area .mk-post-card.cat-gdpr { --bar-color: var(--mk-cat-gdpr); }
+  #marketing-area .mk-post-card.cat-product_updates { --bar-color: var(--mk-cat-prod); }
+  #marketing-area .mk-post-thumb {
+    width: 84px; height: 84px; border-radius: var(--mk-radius-md);
+    flex-shrink: 0; overflow: hidden; position: relative;
+    background: var(--mk-bg-secondary);
+    display: flex; align-items: center; justify-content: center;
+  }
+  #marketing-area .mk-post-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  #marketing-area .mk-post-thumb.placeholder { color: var(--mk-text-tertiary); }
+  #marketing-area .mk-post-thumb i { font-size: 24px; }
+  #marketing-area .mk-post-body { flex: 1; min-width: 0; display: flex; flex-direction: column; padding-top: 4px; }
+  #marketing-area .mk-post-meta-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+  #marketing-area .mk-post-cat { font-size: 11px; font-weight: 500; color: var(--mk-text-secondary); display: inline-flex; align-items: center; gap: 5px; }
+  #marketing-area .mk-post-cat .cat-dot { width: 7px; height: 7px; border-radius: 50%; }
+  #marketing-area .mk-badge {
+    font-size: 10.5px; font-weight: 600; padding: 2px 8px;
+    border-radius: 100px; letter-spacing: 0.02em;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  #marketing-area .mk-badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: .8; }
+  #marketing-area .mk-badge.published { background: var(--mk-success-soft); color: var(--mk-success); }
+  #marketing-area .mk-badge.draft { background: var(--mk-warn-soft); color: var(--mk-warn-ink); }
+  #marketing-area .mk-badge.archived { background: var(--mk-bg-tertiary); color: var(--mk-text-secondary); }
+  #marketing-area .mk-post-title {
+    font-size: 14.5px; font-weight: 600; color: var(--mk-text-primary);
+    line-height: 1.3; margin: 0 0 4px;
+    text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
+  }
+  #marketing-area .mk-post-excerpt {
+    font-size: 12.5px; color: var(--mk-text-secondary); line-height: 1.45;
+    margin: 0 0 8px; display: -webkit-box; -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical; overflow: hidden;
+  }
+  #marketing-area .mk-post-meta-bot { display: flex; gap: 12px; font-size: 11.5px; color: var(--mk-text-tertiary); margin-top: auto; }
+  #marketing-area .mk-post-meta-bot span { display: inline-flex; align-items: center; gap: 4px; }
+  #marketing-area .mk-post-meta-bot i { font-size: 12px; }
+
+  /* Empty state */
+  #marketing-area .mk-empty-state {
+    background: var(--mk-surface-elevated); border: 1px dashed var(--mk-border-primary);
+    border-radius: var(--mk-radius-lg); padding: 3rem 2rem;
+    text-align: center; display: flex; flex-direction: column;
+    align-items: center; gap: .8rem;
+  }
+  #marketing-area .mk-empty-icon {
+    width: 54px; height: 54px; border-radius: 50%;
+    background: var(--mk-accent-soft); color: var(--mk-accent-ink);
+    display: flex; align-items: center; justify-content: center; margin-bottom: 4px;
+  }
+  #marketing-area .mk-empty-icon i { font-size: 24px; }
+  #marketing-area .mk-empty-state h3 {
+    font-family: var(--mk-font-display); font-size: 18px; font-weight: 700;
+    letter-spacing: -0.015em; margin: 0; color: var(--mk-text-primary);
+  }
+  #marketing-area .mk-empty-state p {
+    font-size: 13px; color: var(--mk-text-secondary);
+    max-width: 420px; line-height: 1.6; margin: 0 0 .8rem;
+  }
+  #marketing-area .mk-empty-state p strong { color: var(--mk-text-primary); font-weight: 600; }
+
+  /* Editor */
+  #marketing-area .mk-editor-bar {
+    background: var(--mk-surface-elevated); border: 1px solid var(--mk-border-secondary);
+    border-radius: var(--mk-radius-lg); padding: 10px 14px;
+    display: flex; align-items: center; gap: 10px; margin-bottom: 1.4rem;
+    position: sticky; top: 1rem; z-index: 5;
+  }
+  #marketing-area .mk-editor-bar-mid { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; }
+  #marketing-area .mk-save-indicator {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12px;
+    color: var(--mk-text-secondary); padding: 4px 10px;
+    background: var(--mk-bg-tertiary); border-radius: 100px;
+  }
+  #marketing-area .mk-save-indicator .pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--mk-accent); }
+  #marketing-area .mk-save-indicator i { font-size: 13px; }
+
+  #marketing-area .mk-edit-grid { display: grid; grid-template-columns: 1fr 320px; gap: 1.4rem; }
+  #marketing-area .mk-edit-canvas {
+    background: var(--mk-surface-elevated); border: 1px solid var(--mk-border-secondary);
+    border-radius: var(--mk-radius-lg); padding: 1.6rem 1.8rem 2rem;
+  }
+  #marketing-area .mk-edit-title {
+    width: 100%; border: none; outline: none; background: transparent;
+    font-family: var(--mk-font-display); font-size: 28px; font-weight: 700;
+    letter-spacing: -0.025em; color: var(--mk-text-primary);
+    padding: 0; margin: 0 0 8px; line-height: 1.15;
+  }
+  #marketing-area .mk-edit-title::placeholder { color: var(--mk-text-tertiary); }
+  #marketing-area .mk-edit-subtitle {
+    width: 100%; border: none; outline: none; background: transparent;
+    font-size: 14.5px; color: var(--mk-text-secondary);
+    padding: 0; margin: 0 0 18px; line-height: 1.55;
+  }
+  #marketing-area .mk-edit-subtitle::placeholder { color: var(--mk-text-tertiary); }
+  #marketing-area .mk-toolbar {
+    display: flex; align-items: center; padding: 4px;
+    background: var(--mk-bg-secondary); border: 1px solid var(--mk-border-secondary);
+    border-radius: var(--mk-radius-md); margin-bottom: 12px; flex-wrap: wrap; gap: 2px;
+  }
+  #marketing-area .mk-tb-btn {
+    background: transparent; border: none; width: 30px; height: 28px;
+    border-radius: var(--mk-radius-sm); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--mk-text-secondary); transition: background .12s, color .12s;
+    font-family: inherit;
+  }
+  #marketing-area .mk-tb-btn:hover { background: var(--mk-surface-elevated); color: var(--mk-text-primary); }
+  #marketing-area .mk-tb-btn.active { background: var(--mk-text-primary); color: #fff; }
+  #marketing-area .mk-tb-btn i { font-size: 15px; }
+  #marketing-area .mk-tb-sep { width: 1px; height: 18px; background: var(--mk-border-primary); margin: 0 6px; }
+  #marketing-area .mk-edit-body {
+    min-height: 380px; border: none; outline: none;
+    font-size: 15px; line-height: 1.75; color: var(--mk-text-primary); padding: 8px 0;
+  }
+  #marketing-area .mk-edit-body[data-empty="true"]::before {
+    content: attr(data-placeholder); color: var(--mk-text-tertiary); pointer-events: none;
+  }
+  #marketing-area .mk-edit-body h1 { font-family: var(--mk-font-display); font-size: 24px; margin: 12px 0 8px; }
+  #marketing-area .mk-edit-body h2 { font-family: var(--mk-font-display); font-size: 20px; margin: 12px 0 6px; }
+  #marketing-area .mk-edit-body h3 { font-family: var(--mk-font-display); font-size: 17px; margin: 10px 0 6px; }
+  #marketing-area .mk-edit-body blockquote {
+    border-left: 3px solid var(--mk-accent); padding: 4px 14px;
+    color: var(--mk-text-secondary); font-style: italic; margin: 12px 0;
+  }
+  #marketing-area .mk-edit-body ul, #marketing-area .mk-edit-body ol { padding-left: 1.4rem; margin: 8px 0; }
+  #marketing-area .mk-edit-body code {
+    background: var(--mk-bg-tertiary); padding: 2px 6px;
+    border-radius: 4px; font-family: ui-monospace, monospace; font-size: 13px;
+  }
+  #marketing-area .mk-edit-body a { color: var(--mk-accent); }
+  #marketing-area .mk-edit-body img { max-width: 100%; height: auto; border-radius: var(--mk-radius-md); margin: 8px 0; }
+
+  #marketing-area .mk-panel { display: flex; flex-direction: column; gap: 1rem; }
+  #marketing-area .mk-panel-card {
+    background: var(--mk-surface-elevated); border: 1px solid var(--mk-border-secondary);
+    border-radius: var(--mk-radius-lg); padding: 14px 16px;
+  }
+  #marketing-area .mk-panel-label {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--mk-text-tertiary);
+    margin: 0 0 10px; display: flex; align-items: center; gap: 6px;
+  }
+  #marketing-area .mk-panel-label i { font-size: 13px; color: var(--mk-text-tertiary); }
+  #marketing-area .mk-dropzone {
+    width: 100%; background: var(--mk-bg-secondary);
+    border: 1.5px dashed var(--mk-border-primary); border-radius: var(--mk-radius-md);
+    padding: 22px 12px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    transition: background .15s, border-color .15s; text-align: center;
+  }
+  #marketing-area .mk-dropzone:hover { background: var(--mk-accent-soft); border-color: var(--mk-accent); }
+  #marketing-area .mk-dropzone i { font-size: 22px; color: var(--mk-text-tertiary); }
+  #marketing-area .mk-dropzone:hover i { color: var(--mk-accent); }
+  #marketing-area .mk-dropzone-main { font-size: 12.5px; color: var(--mk-text-primary); font-weight: 500; }
+  #marketing-area .mk-dropzone-sub { font-size: 11px; color: var(--mk-text-tertiary); }
+  #marketing-area .mk-featured-preview { position: relative; }
+  #marketing-area .mk-featured-preview img { width: 100%; height: 140px; object-fit: cover; border-radius: var(--mk-radius-md); display: block; }
+  #marketing-area .mk-featured-remove {
+    position: absolute; top: 6px; right: 6px; width: 24px; height: 24px;
+    background: rgba(10,10,15,.8); color: #fff; border: none; border-radius: 50%;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+
+  #marketing-area .mk-segmented {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+    background: var(--mk-bg-secondary); border: 1px solid var(--mk-border-secondary);
+    border-radius: var(--mk-radius-md); padding: 3px;
+  }
+  #marketing-area .mk-seg-btn {
+    background: transparent; border: none; padding: 6px 8px;
+    font-size: 12.5px; font-weight: 500; color: var(--mk-text-secondary);
+    border-radius: 5px; cursor: pointer;
+  }
+  #marketing-area .mk-seg-btn.active {
+    background: var(--mk-surface-elevated); color: var(--mk-text-primary);
+    box-shadow: var(--mk-shadow-sm);
+  }
+
+  #marketing-area .mk-cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+  #marketing-area .mk-cat-pick {
+    display: flex; align-items: center; gap: 6px; padding: 7px 10px;
+    background: var(--mk-bg-secondary); border: 1px solid var(--mk-border-secondary);
+    border-radius: var(--mk-radius-md); cursor: pointer;
+    font-size: 12px; color: var(--mk-text-secondary);
+    transition: border-color .15s, background .15s;
+  }
+  #marketing-area .mk-cat-pick:hover { border-color: var(--mk-border-primary); }
+  #marketing-area .mk-cat-pick.active {
+    background: var(--mk-surface-elevated); border-color: var(--mk-text-primary);
+    color: var(--mk-text-primary); font-weight: 500;
+  }
+  #marketing-area .mk-cat-pick .cat-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+  #marketing-area .mk-tag-input-wrap {
+    display: flex; flex-wrap: wrap; gap: 4px;
+    background: var(--mk-surface-elevated); border: 1px solid var(--mk-border-secondary);
+    border-radius: var(--mk-radius-md); padding: 6px; min-height: 36px;
+  }
+  #marketing-area .mk-tag-input-wrap:focus-within { border-color: var(--mk-accent); box-shadow: 0 0 0 3px rgba(0,165,132,.1); }
+  #marketing-area .mk-tag-chip {
+    background: var(--mk-bg-tertiary); color: var(--mk-text-primary); font-size: 12px;
+    padding: 3px 8px 3px 10px; border-radius: 100px;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  #marketing-area .mk-tag-chip button {
+    background: transparent; border: none; width: 14px; height: 14px;
+    border-radius: 50%; color: var(--mk-text-secondary);
+    cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0;
+  }
+  #marketing-area .mk-tag-chip button:hover { background: rgba(10,10,15,.1); color: var(--mk-text-primary); }
+  #marketing-area .mk-tag-chip i { font-size: 11px; }
+  #marketing-area .mk-tag-input-wrap input {
+    flex: 1; min-width: 80px; border: none; outline: none;
+    background: transparent; padding: 2px 6px; font-size: 12.5px;
+  }
+
+  #marketing-area .mk-seo-preview {
+    background: var(--mk-bg-secondary); border: 1px solid var(--mk-border-secondary);
+    border-radius: var(--mk-radius-md); padding: 10px 12px; margin-top: 10px;
+  }
+  #marketing-area .mk-seo-url { font-size: 11.5px; color: var(--mk-text-secondary); margin-bottom: 2px; word-break: break-all; }
+  #marketing-area .mk-seo-url .seo-host { color: var(--mk-text-primary); font-weight: 500; }
+  #marketing-area .mk-seo-title-preview { font-size: 14px; color: #1a0dab; margin-bottom: 2px; line-height: 1.3; }
+  #marketing-area .mk-seo-desc-preview { font-size: 11.5px; color: var(--mk-text-secondary); line-height: 1.4; }
+  #marketing-area .mk-meta-counter { text-align: right; font-size: 10.5px; color: var(--mk-text-tertiary); margin-top: 4px; font-variant-numeric: tabular-nums; }
+  #marketing-area .mk-meta-counter.warn { color: var(--mk-warn-ink); }
+  #marketing-area .mk-word-row { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: var(--mk-text-tertiary); }
+  #marketing-area .mk-word-row strong { color: var(--mk-text-primary); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* Dashboard */
+  #marketing-area .mk-greet-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; margin-bottom: 1.4rem; flex-wrap: wrap; }
+  #marketing-area .mk-greet h1 {
+    font-family: var(--mk-font-display); font-size: 28px; font-weight: 700;
+    letter-spacing: -0.025em; margin: 0 0 4px; color: var(--mk-text-primary);
+  }
+  #marketing-area .mk-greet p { margin: 0; font-size: 13.5px; color: var(--mk-text-secondary); }
+  #marketing-area .mk-greet-meta {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 12px; font-size: 12px; color: var(--mk-text-secondary);
+    background: var(--mk-surface-elevated); border: 1px solid var(--mk-border-secondary);
+    border-radius: 100px;
+  }
+  #marketing-area .mk-greet-meta i { font-size: 14px; color: var(--mk-text-tertiary); }
+  #marketing-area .mk-greet-meta .liveDot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--mk-accent); box-shadow: 0 0 0 4px rgba(0,165,132,.15);
+  }
+  #marketing-area .mk-dash-grid { display: grid; grid-template-columns: 1fr 320px; gap: 1.4rem; }
+  #marketing-area .mk-chart-card, #marketing-area .mk-activity-card, #marketing-area .mk-donut-card,
+  #marketing-area .mk-quick-card, #marketing-area .mk-issues-card, #marketing-area .mk-sources-card,
+  #marketing-area .mk-signups-card {
+    background: var(--mk-surface-elevated); border: 1px solid var(--mk-border-secondary);
+    border-radius: var(--mk-radius-lg);
+  }
+  #marketing-area .mk-chart-card { padding: 16px 18px 18px; }
+  #marketing-area .mk-chart-head h3 { font-family: var(--mk-font-display); font-size: 14.5px; font-weight: 700; letter-spacing: -0.01em; margin: 0; }
+  #marketing-area .mk-chart-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  #marketing-area .mk-chart-area { height: 200px; position: relative; display: flex; align-items: center; justify-content: center; color: var(--mk-text-tertiary); font-size: 12px; }
+
+  #marketing-area .mk-activity-head { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--mk-border-secondary); }
+  #marketing-area .mk-activity-head h3 { margin: 0; font-family: var(--mk-font-display); font-size: 14.5px; font-weight: 700; letter-spacing: -0.01em; }
+  #marketing-area .mk-activity-empty { padding: 28px 16px; text-align: center; color: var(--mk-text-tertiary); font-size: 13px; }
+
+  #marketing-area .mk-dash-side { display: flex; flex-direction: column; gap: 1rem; }
+  #marketing-area .mk-donut-card, #marketing-area .mk-quick-card { padding: 16px; }
+  #marketing-area .mk-donut-card h3, #marketing-area .mk-quick-card h3 {
+    font-family: var(--mk-font-display); font-size: 13px; font-weight: 700;
+    letter-spacing: -0.01em; margin: 0 0 12px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  #marketing-area .mk-donut-card h3 i, #marketing-area .mk-quick-card h3 i { font-size: 15px; color: var(--mk-text-tertiary); }
+  #marketing-area .mk-donut-empty { text-align: center; padding: 16px 0; color: var(--mk-text-tertiary); font-size: 12.5px; }
+  #marketing-area .mk-quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  #marketing-area .mk-quick-btn {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+    padding: 12px; background: var(--mk-bg-secondary);
+    border: 1px solid var(--mk-border-secondary); border-radius: var(--mk-radius-md);
+    cursor: pointer; transition: border-color .15s, background .15s;
+    text-align: left; font-family: inherit;
+  }
+  #marketing-area .mk-quick-btn:hover { border-color: var(--mk-text-primary); background: var(--mk-surface-elevated); }
+  #marketing-area .mk-quick-btn i { font-size: 16px; color: var(--mk-accent); margin-bottom: 2px; }
+  #marketing-area .mk-quick-btn-title { font-size: 12.5px; font-weight: 600; color: var(--mk-text-primary); }
+  #marketing-area .mk-quick-btn-sub { font-size: 11px; color: var(--mk-text-tertiary); }
+
+  #marketing-area .mk-goal-card {
+    background: var(--mk-bg-inverse); color: var(--mk-text-inverse);
+    border-radius: var(--mk-radius-lg); padding: 18px;
+    position: relative; overflow: hidden;
+  }
+  #marketing-area .mk-goal-card h3 {
+    font-family: var(--mk-font-display); font-size: 13px; font-weight: 700;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    color: rgba(245,243,239,.5); margin: 0 0 10px;
+  }
+  #marketing-area .mk-goal-num { font-family: var(--mk-font-display); font-size: 28px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; color: #fff; }
+  #marketing-area .mk-goal-label { font-size: 12.5px; color: rgba(245,243,239,.6); margin: 4px 0 14px; }
+
+  /* Newsletter */
+  #marketing-area .mk-nl-grid { display: grid; grid-template-columns: 1fr 340px; gap: 1.4rem; }
+  #marketing-area .mk-issues-head { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--mk-border-secondary); }
+  #marketing-area .mk-issues-head h3 { margin: 0; font-family: var(--mk-font-display); font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+  #marketing-area .mk-audience { display: flex; flex-direction: column; gap: 1rem; }
+  #marketing-area .mk-audience-hero {
+    background: var(--mk-bg-inverse); color: var(--mk-text-inverse);
+    border-radius: var(--mk-radius-lg); padding: 20px;
+  }
+  #marketing-area .mk-audience-hero-lbl {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em;
+    color: rgba(245,243,239,.5); margin-bottom: 8px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  #marketing-area .mk-audience-hero-lbl i { font-size: 13px; }
+  #marketing-area .mk-audience-num { font-family: var(--mk-font-display); font-size: 36px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; color: #fff; }
+  #marketing-area .mk-sources-card, #marketing-area .mk-signups-card { padding: 16px; }
+  #marketing-area .mk-sources-card h4, #marketing-area .mk-signups-card h4 {
+    font-family: var(--mk-font-display); font-size: 13px; font-weight: 700;
+    letter-spacing: -0.01em; margin: 0 0 12px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  #marketing-area .mk-sources-card h4 i, #marketing-area .mk-signups-card h4 i { font-size: 15px; color: var(--mk-text-tertiary); }
+  #marketing-area .mk-nl-empty { padding: 36px 16px; text-align: center; color: var(--mk-text-tertiary); font-size: 13px; }
+
+  @media (max-width: 980px) {
+    #marketing-area .mk-shell { grid-template-columns: 1fr; }
+    #marketing-area .mk-side { display: none; }
+    #marketing-area .mk-stat-strip { grid-template-columns: repeat(2, 1fr); }
+    #marketing-area .mk-list-grid, #marketing-area .mk-edit-grid,
+    #marketing-area .mk-dash-grid, #marketing-area .mk-nl-grid { grid-template-columns: 1fr; }
+    #marketing-area .mk-main { padding: 1rem; }
+  }
+</style>
+
+<div id="marketing-area" style="display:none;">
+  <div class="mk-shell">
+    <aside class="mk-side">
+      <div class="mk-logo">RH<span>C</span></div>
+
+      <div class="mk-side-section">Marketing</div>
+      <a class="mk-sidenav-link active" data-section="mk-section-dashboard"><i class="ti ti-layout-dashboard"></i>Dashboard</a>
+      <a class="mk-sidenav-link" data-section="mk-section-blog"><i class="ti ti-article"></i>Blog</a>
+      <a class="mk-sidenav-link" data-section="mk-section-newsletter"><i class="ti ti-mail"></i>Newsletter</a>
+
+      <div class="mk-user">
+        <div class="mk-user-av" id="mk-user-av">MK</div>
+        <div style="min-width:0;flex:1;">
+          <div class="mk-user-name" id="mk-user-name">Marketing</div>
+          <div class="mk-user-role" id="mk-user-email">marketing@rhc.pt</div>
+        </div>
+      </div>
+      <button class="mk-logout" onclick="doLogout()"><i class="ti ti-logout"></i> Sair</button>
+    </aside>
+
+    <main class="mk-main">
+
+      <!-- ── DASHBOARD ── -->
+      <div class="mk-section" id="mk-section-dashboard">
+        <div class="mk-greet-row">
+          <div class="mk-greet">
+            <h1 id="mk-greeting">Olá <span style="display:inline-block;">👋</span></h1>
+          </div>
+          <div class="mk-greet-meta">
+            <span class="liveDot"></span>
+            <i class="ti ti-calendar"></i>
+            <span id="mk-today-label">—</span>
+          </div>
+        </div>
+
+        <div class="mk-stat-strip">
+          <div class="mk-stat-cell">
+            <div class="lbl"><i class="ti ti-rocket"></i>Pedidos de demo</div>
+            <div class="num">—</div>
+            <div class="delta">sem dados ainda</div>
+          </div>
+          <div class="mk-stat-cell">
+            <div class="lbl"><i class="ti ti-eye"></i>Visitantes únicos</div>
+            <div class="num">—</div>
+            <div class="delta">analytics em breve</div>
+          </div>
+          <div class="mk-stat-cell">
+            <div class="lbl"><i class="ti ti-target-arrow"></i>Conversão</div>
+            <div class="num">—</div>
+            <div class="delta">sem dados ainda</div>
+          </div>
+          <div class="mk-stat-cell">
+            <div class="lbl"><i class="ti ti-user-check"></i>Leads qualificados</div>
+            <div class="num">—</div>
+            <div class="delta">sem dados ainda</div>
+          </div>
+        </div>
+
+        <div class="mk-dash-grid">
+          <div style="display:flex; flex-direction:column; gap:1rem;">
+            <div class="mk-chart-card">
+              <div class="mk-chart-head">
+                <h3>Tráfego do site</h3>
+                <span style="font-size:12px;color:var(--mk-text-tertiary);">últimos 30 dias</span>
+              </div>
+              <div class="mk-chart-area">Sem dados ainda — analytics em breve</div>
+            </div>
+
+            <div class="mk-activity-card">
+              <div class="mk-activity-head">
+                <h3>Atividade recente</h3>
+              </div>
+              <div class="mk-activity-empty">Sem atividade recente</div>
+            </div>
+          </div>
+
+          <aside class="mk-dash-side">
+            <div class="mk-goal-card">
+              <h3>Meta do mês</h3>
+              <div class="mk-goal-num">—</div>
+              <p class="mk-goal-label">sem dados ainda</p>
+            </div>
+            <div class="mk-donut-card">
+              <h3><i class="ti ti-chart-pie"></i>Fontes de tráfego</h3>
+              <div class="mk-donut-empty">Sem dados ainda</div>
+            </div>
+            <div class="mk-quick-card">
+              <h3><i class="ti ti-bolt"></i>Acessos rápidos</h3>
+              <div class="mk-quick-grid">
+                <button class="mk-quick-btn" data-jump="mk-section-blog">
+                  <i class="ti ti-pencil-plus"></i>
+                  <span class="mk-quick-btn-title">Novo post</span>
+                  <span class="mk-quick-btn-sub">Blog</span>
+                </button>
+                <button class="mk-quick-btn" data-jump="mk-section-newsletter" disabled title="Em breve">
+                  <i class="ti ti-mail-fast"></i>
+                  <span class="mk-quick-btn-title">Nova edição</span>
+                  <span class="mk-quick-btn-sub">Em breve</span>
+                </button>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <!-- ── BLOG ── -->
+      <div class="mk-section" id="mk-section-blog" hidden>
+        <div class="mk-tabs">
+          <button class="mk-tab active" data-view="mk-list-view"><i class="ti ti-list"></i>Lista de posts</button>
+          <button class="mk-tab" data-view="mk-editor-view"><i class="ti ti-edit"></i>Editor de post</button>
+        </div>
+
+        <section class="mk-view active" id="mk-list-view">
+          <div class="mk-page-head">
+            <div class="mk-page-head-icon"><i class="ti ti-article"></i></div>
+            <div class="mk-page-head-title">
+              <h1>Posts do blog</h1>
+              <p>Gerir, criar e publicar artigos no rhc.pt/blog</p>
+            </div>
+            <div class="mk-page-head-actions">
+              <button class="mk-btn mk-btn-primary" id="mk-go-editor"><i class="ti ti-plus"></i>Novo post</button>
+            </div>
+          </div>
+
+          <div class="mk-stat-strip">
+            <div class="mk-stat-cell"><div class="lbl"><i class="ti ti-stack-2"></i>Total</div><div class="num" id="mk-stat-total">0</div><div class="delta">artigos no sistema</div></div>
+            <div class="mk-stat-cell"><div class="lbl"><i class="ti ti-check"></i>Publicados</div><div class="num" id="mk-stat-pub">0</div><div class="delta">visíveis em rhc.pt/blog</div></div>
+            <div class="mk-stat-cell"><div class="lbl"><i class="ti ti-file"></i>Rascunhos</div><div class="num" id="mk-stat-draft">0</div><div class="delta">em preparação</div></div>
+            <div class="mk-stat-cell"><div class="lbl"><i class="ti ti-eye"></i>Visualizações</div><div class="num" id="mk-stat-views">0</div><div class="delta">soma de todos os posts</div></div>
+          </div>
+
+          <div class="mk-list-grid">
+            <div class="mk-side-nav" id="mk-list-side">
+              <div class="mk-side-nav-section">Estado</div>
+              <button class="mk-side-nav-item active" data-filter-status="all"><i class="ti ti-list"></i>Todos<span class="count" id="mk-c-all">0</span></button>
+              <button class="mk-side-nav-item" data-filter-status="published"><i class="ti ti-check"></i>Publicados<span class="count" id="mk-c-published">0</span></button>
+              <button class="mk-side-nav-item" data-filter-status="draft"><i class="ti ti-file"></i>Rascunhos<span class="count" id="mk-c-draft">0</span></button>
+              <button class="mk-side-nav-item" data-filter-status="archived"><i class="ti ti-archive"></i>Arquivo<span class="count" id="mk-c-archived">0</span></button>
+
+              <div class="mk-side-nav-section">Categorias</div>
+              <button class="mk-side-nav-item" data-filter-cat="ai_screening"><span class="cat-dot" style="background:var(--mk-cat-ai);border-radius:2px;width:8px;height:8px;"></span>AI screening<span class="count" id="mk-c-ai_screening">0</span></button>
+              <button class="mk-side-nav-item" data-filter-cat="candidate_experience"><span class="cat-dot" style="background:var(--mk-cat-cand);border-radius:2px;width:8px;height:8px;"></span>Candidate exp.<span class="count" id="mk-c-candidate_experience">0</span></button>
+              <button class="mk-side-nav-item" data-filter-cat="gdpr"><span class="cat-dot" style="background:var(--mk-cat-gdpr);border-radius:2px;width:8px;height:8px;"></span>GDPR<span class="count" id="mk-c-gdpr">0</span></button>
+              <button class="mk-side-nav-item" data-filter-cat="product_updates"><span class="cat-dot" style="background:var(--mk-cat-prod);border-radius:2px;width:8px;height:8px;"></span>Product updates<span class="count" id="mk-c-product_updates">0</span></button>
+            </div>
+
+            <div>
+              <div class="mk-list-toolbar">
+                <div class="mk-search-wrap">
+                  <i class="ti ti-search"></i>
+                  <input type="text" id="mk-search" placeholder="Procurar por título, autor ou tag...">
+                </div>
+              </div>
+              <div class="mk-post-list" id="mk-post-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="mk-view" id="mk-editor-view">
+          <div class="mk-editor-bar">
+            <button class="mk-btn mk-btn-ghost" id="mk-back-list"><i class="ti ti-arrow-left"></i>Voltar</button>
+            <div class="mk-editor-bar-mid">
+              <span class="mk-badge draft" id="mk-status-badge">Rascunho</span>
+              <div class="mk-save-indicator" id="mk-save-ind"><span class="pulse"></span><i class="ti ti-cloud-check"></i><span id="mk-save-label">Sem alterações</span></div>
+            </div>
+            <button class="mk-btn mk-btn-ghost" id="mk-preview-btn"><i class="ti ti-eye"></i>Pré-visualizar</button>
+            <button class="mk-btn mk-btn-accent" id="mk-publish-btn"><i class="ti ti-send"></i>Publicar</button>
+          </div>
+
+          <div class="mk-edit-grid">
+            <div class="mk-edit-canvas">
+              <input type="text" class="mk-edit-title" id="mk-edit-title" placeholder="Título do post…">
+              <input type="text" class="mk-edit-subtitle" id="mk-edit-subtitle" placeholder="Pequeno subtítulo ou resumo…">
+
+              <div class="mk-toolbar">
+                <button class="mk-tb-btn" data-cmd="bold" title="Negrito"><i class="ti ti-bold"></i></button>
+                <button class="mk-tb-btn" data-cmd="italic" title="Itálico"><i class="ti ti-italic"></i></button>
+                <button class="mk-tb-btn" data-cmd="underline" title="Sublinhar"><i class="ti ti-underline"></i></button>
+                <button class="mk-tb-btn" data-cmd="strikeThrough" title="Riscado"><i class="ti ti-strikethrough"></i></button>
+                <span class="mk-tb-sep"></span>
+                <button class="mk-tb-btn" data-cmd="formatBlock" data-arg="H1" title="Heading 1"><i class="ti ti-h-1"></i></button>
+                <button class="mk-tb-btn" data-cmd="formatBlock" data-arg="H2" title="Heading 2"><i class="ti ti-h-2"></i></button>
+                <button class="mk-tb-btn" data-cmd="formatBlock" data-arg="H3" title="Heading 3"><i class="ti ti-h-3"></i></button>
+                <button class="mk-tb-btn" data-cmd="formatBlock" data-arg="BLOCKQUOTE" title="Citação"><i class="ti ti-quote"></i></button>
+                <span class="mk-tb-sep"></span>
+                <button class="mk-tb-btn" data-cmd="insertUnorderedList" title="Lista"><i class="ti ti-list"></i></button>
+                <button class="mk-tb-btn" data-cmd="insertOrderedList" title="Lista numerada"><i class="ti ti-list-numbers"></i></button>
+                <span class="mk-tb-sep"></span>
+                <button class="mk-tb-btn" data-cmd="createLink" title="Link"><i class="ti ti-link"></i></button>
+                <button class="mk-tb-btn" data-cmd="insertImage" title="Imagem"><i class="ti ti-photo"></i></button>
+                <button class="mk-tb-btn" data-cmd="insertHorizontalRule" title="Divisor"><i class="ti ti-separator-horizontal"></i></button>
+                <span class="mk-tb-sep"></span>
+                <button class="mk-tb-btn" data-cmd="undo" title="Desfazer"><i class="ti ti-arrow-back-up"></i></button>
+                <button class="mk-tb-btn" data-cmd="redo" title="Refazer"><i class="ti ti-arrow-forward-up"></i></button>
+              </div>
+
+              <div class="mk-edit-body" id="mk-edit-body" contenteditable="true" data-empty="true" data-placeholder="Começa a escrever o teu artigo aqui…"></div>
+            </div>
+
+            <aside class="mk-panel">
+              <div class="mk-panel-card">
+                <p class="mk-panel-label"><i class="ti ti-photo"></i>Imagem destacada</p>
+                <div id="mk-featured-area">
+                  <button class="mk-dropzone" id="mk-dropzone">
+                    <i class="ti ti-photo-plus"></i>
+                    <span class="mk-dropzone-main">Carregar ou arrastar imagem</span>
+                    <span class="mk-dropzone-sub">PNG · JPG · WebP — máx. 2 MB</span>
+                  </button>
+                </div>
+                <input type="file" id="mk-image-input" accept="image/png,image/jpeg,image/webp" style="display:none;">
+              </div>
+
+              <div class="mk-panel-card">
+                <p class="mk-panel-label"><i class="ti ti-circle-dot"></i>Estado &amp; visibilidade</p>
+                <select id="mk-status-select" aria-label="Estado">
+                  <option value="draft">Rascunho</option>
+                  <option value="published">Publicado</option>
+                  <option value="archived">Arquivado</option>
+                </select>
+                <p class="mk-panel-label" style="margin: 12px 0 8px;"><i class="ti ti-language"></i>Língua</p>
+                <div class="mk-segmented" id="mk-lang-seg">
+                  <button class="mk-seg-btn active" data-lang="pt">PT</button>
+                  <button class="mk-seg-btn" data-lang="en">EN</button>
+                </div>
+              </div>
+
+              <div class="mk-panel-card">
+                <p class="mk-panel-label"><i class="ti ti-category"></i>Categoria</p>
+                <div class="mk-cat-grid" id="mk-cat-grid">
+                  <button class="mk-cat-pick" data-cat="ai_screening"><span class="cat-dot" style="background:var(--mk-cat-ai)"></span>AI screening</button>
+                  <button class="mk-cat-pick" data-cat="candidate_experience"><span class="cat-dot" style="background:var(--mk-cat-cand)"></span>Candidate exp.</button>
+                  <button class="mk-cat-pick" data-cat="gdpr"><span class="cat-dot" style="background:var(--mk-cat-gdpr)"></span>GDPR</button>
+                  <button class="mk-cat-pick" data-cat="product_updates"><span class="cat-dot" style="background:var(--mk-cat-prod)"></span>Product</button>
+                </div>
+                <p class="mk-panel-label" style="margin: 14px 0 8px;"><i class="ti ti-tag"></i>Tags</p>
+                <div class="mk-tag-input-wrap" id="mk-tag-wrap">
+                  <input type="text" placeholder="Adicionar tag…" id="mk-tag-input">
+                </div>
+              </div>
+
+              <div class="mk-panel-card">
+                <p class="mk-panel-label"><i class="ti ti-search"></i>SEO</p>
+                <input type="text" id="mk-slug" placeholder="Slug do URL" style="margin-bottom:8px;">
+                <textarea id="mk-meta-desc" placeholder="Meta description (máx. 160 caracteres)" rows="3"></textarea>
+                <div class="mk-meta-counter" id="mk-meta-counter">0 / 160</div>
+                <div class="mk-seo-preview">
+                  <div class="mk-seo-url"><span class="seo-host">rhc.pt</span> › post.html?slug=<span id="mk-seo-slug">—</span></div>
+                  <div class="mk-seo-title-preview" id="mk-seo-title-prev">Título do post · RHC</div>
+                  <div class="mk-seo-desc-preview" id="mk-seo-desc-prev">A meta description aparece aqui à medida que escreves.</div>
+                </div>
+              </div>
+
+              <div class="mk-panel-card">
+                <div class="mk-word-row">
+                  <span><strong id="mk-word-count">0</strong> palavras</span>
+                  <span><strong id="mk-read-time">0</strong> min de leitura</span>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+      </div>
+
+      <!-- ── NEWSLETTER (visualização) ── -->
+      <div class="mk-section" id="mk-section-newsletter" hidden>
+        <div class="mk-page-head">
+          <div class="mk-page-head-icon"><i class="ti ti-mail"></i></div>
+          <div class="mk-page-head-title">
+            <h1>Newsletter</h1>
+            <p>Edições, audiência e performance da newsletter da RHC</p>
+          </div>
+          <div class="mk-page-head-actions">
+            <button class="mk-btn mk-btn-ghost" disabled title="Em breve"><i class="ti ti-users"></i>Gerir subscritores</button>
+            <button class="mk-btn mk-btn-primary" disabled title="Em breve"><i class="ti ti-plus"></i>Nova edição</button>
+          </div>
+        </div>
+
+        <div class="mk-stat-strip">
+          <div class="mk-stat-cell"><div class="lbl"><i class="ti ti-users"></i>Subscritores</div><div class="num">—</div><div class="delta">sem dados ainda</div></div>
+          <div class="mk-stat-cell"><div class="lbl"><i class="ti ti-mail-opened"></i>Taxa de abertura</div><div class="num">—</div><div class="delta">sem dados ainda</div></div>
+          <div class="mk-stat-cell"><div class="lbl"><i class="ti ti-click"></i>Taxa de cliques</div><div class="num">—</div><div class="delta">sem dados ainda</div></div>
+          <div class="mk-stat-cell"><div class="lbl"><i class="ti ti-trending-up"></i>Crescimento 30d</div><div class="num">—</div><div class="delta">sem dados ainda</div></div>
+        </div>
+
+        <div class="mk-nl-grid">
+          <div class="mk-issues-card">
+            <div class="mk-issues-head"><h3>Edições</h3></div>
+            <div class="mk-nl-empty">Sem edições criadas ainda</div>
+          </div>
+          <aside class="mk-audience">
+            <div class="mk-audience-hero">
+              <div class="mk-audience-hero-lbl"><i class="ti ti-users"></i>A tua audiência</div>
+              <div class="mk-audience-num">—</div>
+              <div style="font-size:12px;color:rgba(245,243,239,.5);margin-top:6px;">sem subscritores ainda</div>
+            </div>
+            <div class="mk-sources-card">
+              <h4><i class="ti ti-chart-pie"></i>Fontes de subscrição</h4>
+              <div style="text-align:center;color:var(--mk-text-tertiary);font-size:12px;padding:8px 0;">sem dados ainda</div>
+            </div>
+            <div class="mk-signups-card">
+              <h4><i class="ti ti-user-plus"></i>Subscritos recentes</h4>
+              <div style="text-align:center;color:var(--mk-text-tertiary);font-size:12px;padding:8px 0;">sem subscritores ainda</div>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+    </main>
   </div>
 </div>
 
@@ -622,8 +1525,9 @@ async function enterAdmin() {
   if(CURRENT_ROLE === 'marketing') {
     document.getElementById('main-page').style.display = 'none';
     document.getElementById('marketing-area').style.display = 'block';
-    // Skip loadData() — RLS would block most queries for marketing role
-    // and there's nothing for the placeholder to display anyway.
+    // Skip loadData() — RLS blocks most queries for marketing role.
+    // mountMarketingArea() does its own focused fetch on blog_posts.
+    try { await mountMarketingArea(); } catch(e) { console.warn('mountMarketingArea failed:', e); }
     return;
   }
   document.getElementById('main-page').style.display = 'block';
@@ -1549,6 +2453,614 @@ function showToast(msg, opts) {
     enterAdmin();
   } catch(e) { /* leave login form visible */ }
 })();
+
+/* ════════════════════════════════════════════════════════════════════
+   MARKETING AREA — wires the design HTML to Supabase.
+   ════════════════════════════════════════════════════════════════════ */
+
+const MK_BLOG_BUCKET = 'blog-images';
+const MK_CATEGORY_LABELS = {
+  ai_screening:         'AI screening',
+  candidate_experience: 'Candidate experience',
+  gdpr:                 'GDPR',
+  product_updates:      'Product updates'
+};
+const MK_STATUS_LABELS = { draft: 'Rascunho', published: 'Publicado', archived: 'Arquivado' };
+
+// In-memory state for the marketing area. Loaded lazily when the marketing
+// user enters the panel — no point fetching for admin/suporte sessions.
+const MK_STATE = {
+  posts: [],
+  filterStatus: 'all',   // 'all' | 'published' | 'draft' | 'archived'
+  filterCat:    null,    // null | category key
+  search:       '',
+  current:      null,    // currently-editing post (null = new)
+  dirty:        false,   // unsaved changes flag (drives beforeunload warning)
+  saving:       false,
+  saveTimer:    null
+};
+
+function _mkSlugify(s) {
+  return String(s||'')
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .substring(0, 80);
+}
+function _mkEscapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+function _mkFmtDate(iso) {
+  if(!iso) return '—';
+  try {
+    return new Date(iso).toLocaleDateString('pt-PT', { day:'2-digit', month:'short', year:'numeric' });
+  } catch(e) { return '—'; }
+}
+function _mkExcerptFromContent(html) {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = String(html || '');
+  return (tmp.textContent || '').trim().substring(0, 140);
+}
+
+// Called by enterAdmin() when CURRENT_ROLE === 'marketing'.
+async function mountMarketingArea() {
+  // Greet + meta
+  const isEN = (document.documentElement.lang || 'pt') === 'en';
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? (isEN?'Good morning':'Bom dia') :
+                hour < 19 ? (isEN?'Good afternoon':'Boa tarde') :
+                            (isEN?'Good evening':'Boa noite');
+  const firstName = (ADMIN.name || '').split(' ')[0] || 'Marketing';
+  document.getElementById('mk-greeting').innerHTML =
+    `${_mkEscapeHtml(greet)}, ${_mkEscapeHtml(firstName)} <span style="display:inline-block;">👋</span>`;
+  const todayLbl = new Date().toLocaleDateString('pt-PT',
+    { weekday:'long', day:'numeric', month:'short', year:'numeric' });
+  document.getElementById('mk-today-label').textContent = todayLbl;
+
+  // Sidebar user card
+  const initials = (ADMIN.name || 'MK').split(' ').map(s=>s[0]||'').slice(0,2).join('').toUpperCase();
+  document.getElementById('mk-user-av').textContent = initials || 'MK';
+  document.getElementById('mk-user-name').textContent = ADMIN.name || 'Marketing';
+  document.getElementById('mk-user-email').textContent = ADMIN.email || '';
+
+  _mkWireNav();
+  _mkWireBlog();
+  _mkWireBeforeUnload();
+  await _mkLoadPosts();
+}
+
+function _mkWireNav() {
+  // Section sidebar
+  document.querySelectorAll('#marketing-area .mk-sidenav-link').forEach(a => {
+    a.onclick = (e) => { e.preventDefault(); _mkShowSection(a.dataset.section); };
+  });
+  // Quick-action jumps from dashboard
+  document.querySelectorAll('#marketing-area .mk-quick-btn[data-jump]').forEach(b => {
+    b.onclick = () => { if(!b.disabled) _mkShowSection(b.dataset.jump); };
+  });
+}
+
+function _mkShowSection(id) {
+  document.querySelectorAll('#marketing-area .mk-sidenav-link').forEach(a =>
+    a.classList.toggle('active', a.dataset.section === id));
+  document.querySelectorAll('#marketing-area .mk-section').forEach(s =>
+    s.hidden = (s.id !== id));
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+function _mkShowView(id) {
+  document.querySelectorAll('#marketing-area .mk-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.view === id));
+  document.querySelectorAll('#marketing-area .mk-view').forEach(v =>
+    v.classList.toggle('active', v.id === id));
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+function _mkWireBlog() {
+  // Sub-tabs (list ⇄ editor)
+  document.querySelectorAll('#marketing-area .mk-tab').forEach(t => {
+    t.onclick = () => _mkShowView(t.dataset.view);
+  });
+  document.getElementById('mk-go-editor').onclick = () => _mkOpenEditor(null);
+  document.getElementById('mk-back-list').onclick = () => {
+    if(MK_STATE.dirty && !confirm('Tens alterações não guardadas. Sair sem guardar?')) return;
+    MK_STATE.dirty = false;
+    _mkShowView('mk-list-view');
+  };
+
+  // Sidebar filters
+  document.querySelectorAll('#marketing-area #mk-list-side .mk-side-nav-item').forEach(btn => {
+    btn.onclick = () => {
+      const status = btn.dataset.filterStatus;
+      const cat    = btn.dataset.filterCat;
+      if(status !== undefined) {
+        MK_STATE.filterStatus = status;
+        MK_STATE.filterCat = null;
+      } else if(cat !== undefined) {
+        MK_STATE.filterCat = (MK_STATE.filterCat === cat) ? null : cat;
+        MK_STATE.filterStatus = 'all';
+      }
+      document.querySelectorAll('#marketing-area #mk-list-side .mk-side-nav-item').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      _mkRenderPosts();
+    };
+  });
+
+  // Search
+  document.getElementById('mk-search').oninput = (e) => {
+    MK_STATE.search = e.target.value.trim().toLowerCase();
+    _mkRenderPosts();
+  };
+
+  // Editor wiring
+  const $title    = document.getElementById('mk-edit-title');
+  const $subtitle = document.getElementById('mk-edit-subtitle');
+  const $body     = document.getElementById('mk-edit-body');
+  const $metaDesc = document.getElementById('mk-meta-desc');
+  const $slug     = document.getElementById('mk-slug');
+  const $statusSel= document.getElementById('mk-status-select');
+
+  // Mark dirty + trigger debounced auto-save on any edit
+  const _markDirty = () => { MK_STATE.dirty = true; _mkAutoSave(); _mkUpdateSaveIndicator('A guardar…'); };
+  $title.oninput = () => { _markDirty(); _mkUpdateSEOPreview(); if(!MK_STATE.current?.slug) $slug.value = _mkSlugify($title.value); _mkUpdateSEOPreview(); };
+  $subtitle.oninput = _markDirty;
+  $body.oninput = () => { _markDirty(); _mkUpdateWordCount(); };
+  $metaDesc.oninput = () => { _markDirty(); _mkUpdateMetaCounter(); _mkUpdateSEOPreview(); };
+  $slug.oninput = () => { _markDirty(); $slug.value = _mkSlugify($slug.value); _mkUpdateSEOPreview(); };
+  $statusSel.onchange = () => {
+    _markDirty();
+    document.getElementById('mk-status-badge').textContent = MK_STATUS_LABELS[$statusSel.value] || 'Rascunho';
+    document.getElementById('mk-status-badge').className = 'mk-badge ' + $statusSel.value;
+  };
+
+  // Language segmented
+  document.querySelectorAll('#marketing-area #mk-lang-seg .mk-seg-btn').forEach(b => {
+    b.onclick = () => {
+      document.querySelectorAll('#marketing-area #mk-lang-seg .mk-seg-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      _markDirty();
+    };
+  });
+
+  // Category picker
+  document.querySelectorAll('#marketing-area #mk-cat-grid .mk-cat-pick').forEach(b => {
+    b.onclick = () => {
+      document.querySelectorAll('#marketing-area #mk-cat-grid .mk-cat-pick').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      _markDirty();
+    };
+  });
+
+  // Tags
+  const $tagInput = document.getElementById('mk-tag-input');
+  $tagInput.onkeydown = (e) => {
+    if((e.key === 'Enter' || e.key === ',') && $tagInput.value.trim()) {
+      e.preventDefault();
+      _mkAddTag($tagInput.value.trim());
+      $tagInput.value = '';
+      _markDirty();
+    }
+  };
+  document.getElementById('mk-tag-wrap').addEventListener('click', (e) => {
+    const x = e.target.closest('.mk-tag-chip button');
+    if(x) { x.parentElement.remove(); _markDirty(); }
+  });
+
+  // Toolbar buttons (execCommand — deprecated but still works in all current browsers)
+  document.querySelectorAll('#marketing-area .mk-tb-btn').forEach(btn => {
+    btn.onclick = () => {
+      const cmd = btn.dataset.cmd;
+      let arg  = btn.dataset.arg || null;
+      if(cmd === 'createLink') {
+        arg = prompt('URL do link:'); if(!arg) return;
+      } else if(cmd === 'insertImage') {
+        // Insert image inline: prompt for URL OR trigger file input upload
+        const useUpload = confirm('Carregar imagem nova? (Cancelar = colar URL)');
+        if(useUpload) { _mkInlineImageUpload(); return; }
+        arg = prompt('URL da imagem:'); if(!arg) return;
+      }
+      document.execCommand(cmd, false, arg);
+      document.getElementById('mk-edit-body').focus();
+      _markDirty();
+    };
+  });
+
+  // Featured image dropzone
+  const $dz = document.getElementById('mk-dropzone');
+  const $fi = document.getElementById('mk-image-input');
+  if($dz) $dz.onclick = () => $fi.click();
+  $fi.onchange = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if(file) _mkUploadFeaturedImage(file);
+    $fi.value = '';
+  };
+
+  // Preview button (opens public preview tab — uses post.html which Fase 4 creates)
+  document.getElementById('mk-preview-btn').onclick = () => {
+    const slug = (document.getElementById('mk-slug').value || '').trim();
+    if(!slug) { alert('Define um slug primeiro.'); return; }
+    window.open('https://rhc.pt/post.html?slug=' + encodeURIComponent(slug) + '&preview=1', '_blank');
+  };
+
+  // Publish button
+  document.getElementById('mk-publish-btn').onclick = _mkPublishPost;
+}
+
+function _mkWireBeforeUnload() {
+  // Warn user if they try to close the tab with unsaved edits
+  window.addEventListener('beforeunload', (e) => {
+    if(CURRENT_ROLE !== 'marketing') return;
+    if(MK_STATE.dirty) {
+      e.preventDefault();
+      e.returnValue = 'Tens alterações não guardadas no editor.';
+      return e.returnValue;
+    }
+  });
+}
+
+async function _mkLoadPosts() {
+  try {
+    const { data, error } = await supa
+      .from('blog_posts')
+      .select('id,title,subtitle,slug,status,language,category,tags,featured_image_url,views,published_at,created_at,updated_at,author_name,content,meta_description')
+      .order('updated_at', { ascending: false });
+    if(error) {
+      console.warn('Failed to load posts:', error.message);
+      MK_STATE.posts = [];
+    } else {
+      MK_STATE.posts = data || [];
+    }
+  } catch(e) {
+    console.warn('Failed to load posts (threw):', e);
+    MK_STATE.posts = [];
+  }
+  _mkRenderStats();
+  _mkRenderPosts();
+}
+
+function _mkRenderStats() {
+  const posts = MK_STATE.posts;
+  const tot   = posts.length;
+  const pub   = posts.filter(p => p.status === 'published').length;
+  const drf   = posts.filter(p => p.status === 'draft').length;
+  const arc   = posts.filter(p => p.status === 'archived').length;
+  const views = posts.reduce((s, p) => s + (p.views || 0), 0);
+  document.getElementById('mk-stat-total').textContent = tot;
+  document.getElementById('mk-stat-pub').textContent   = pub;
+  document.getElementById('mk-stat-draft').textContent = drf;
+  document.getElementById('mk-stat-views').textContent = views;
+  document.getElementById('mk-c-all').textContent       = tot;
+  document.getElementById('mk-c-published').textContent = pub;
+  document.getElementById('mk-c-draft').textContent     = drf;
+  document.getElementById('mk-c-archived').textContent  = arc;
+  ['ai_screening','candidate_experience','gdpr','product_updates'].forEach(cat => {
+    const n = posts.filter(p => p.category === cat).length;
+    const el = document.getElementById('mk-c-' + cat);
+    if(el) el.textContent = n;
+  });
+}
+
+function _mkRenderPosts() {
+  const list = document.getElementById('mk-post-list');
+  const filtered = MK_STATE.posts.filter(p => {
+    if(MK_STATE.filterStatus !== 'all' && p.status !== MK_STATE.filterStatus) return false;
+    if(MK_STATE.filterCat && p.category !== MK_STATE.filterCat) return false;
+    if(MK_STATE.search) {
+      const hay = (p.title + ' ' + (p.subtitle||'') + ' ' + (p.tags||[]).join(' ') + ' ' + (p.author_name||'')).toLowerCase();
+      if(hay.indexOf(MK_STATE.search) === -1) return false;
+    }
+    return true;
+  });
+
+  if(filtered.length === 0) {
+    if(MK_STATE.posts.length === 0) {
+      list.innerHTML = `
+        <div class="mk-empty-state">
+          <div class="mk-empty-icon"><i class="ti ti-pencil"></i></div>
+          <h3>Ainda não há artigos.</h3>
+          <p>Quando publicares o teu primeiro post, ele aparece aqui. Os artigos publicados vão também para <strong>rhc.pt/blog</strong> automaticamente.</p>
+          <button class="mk-btn mk-btn-primary" onclick="_mkOpenEditor(null)"><i class="ti ti-plus"></i>Criar o primeiro post</button>
+        </div>`;
+    } else {
+      list.innerHTML = `<div class="mk-empty-state"><div class="mk-empty-icon"><i class="ti ti-filter-off"></i></div><h3>Nenhum post corresponde aos filtros.</h3></div>`;
+    }
+    return;
+  }
+
+  list.innerHTML = filtered.map(p => {
+    const catClass = p.category ? ('cat-' + p.category) : '';
+    const catLabel = MK_CATEGORY_LABELS[p.category] || '—';
+    const catColor = ({ai_screening:'var(--mk-cat-ai)',candidate_experience:'var(--mk-cat-cand)',gdpr:'var(--mk-cat-gdpr)',product_updates:'var(--mk-cat-prod)'})[p.category] || '#999';
+    const statusLbl = MK_STATUS_LABELS[p.status] || p.status;
+    const date = _mkFmtDate(p.published_at || p.updated_at || p.created_at);
+    const excerpt = _mkExcerptFromContent(p.content) || (p.subtitle || '');
+    const thumb = p.featured_image_url
+      ? `<div class="mk-post-thumb"><img src="${_mkEscapeHtml(p.featured_image_url)}" alt=""></div>`
+      : `<div class="mk-post-thumb placeholder"><i class="ti ti-photo"></i></div>`;
+    return `
+      <div class="mk-post-card ${catClass}" data-id="${_mkEscapeHtml(p.id)}">
+        <div class="accent-bar"></div>
+        ${thumb}
+        <div class="mk-post-body">
+          <div class="mk-post-meta-top">
+            <span class="mk-post-cat"><span class="cat-dot" style="background:${catColor}"></span>${_mkEscapeHtml(catLabel)}</span>
+            <span class="mk-badge ${_mkEscapeHtml(p.status)}">${_mkEscapeHtml(statusLbl)}</span>
+          </div>
+          <h3 class="mk-post-title">${_mkEscapeHtml(p.title) || '(sem título)'}</h3>
+          <p class="mk-post-excerpt">${_mkEscapeHtml(excerpt)}</p>
+          <div class="mk-post-meta-bot">
+            <span><i class="ti ti-calendar"></i>${date}</span>
+            <span><i class="ti ti-eye"></i>${p.views || 0}</span>
+            <span><i class="ti ti-user"></i>${_mkEscapeHtml(p.author_name||'—')}</span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  list.querySelectorAll('.mk-post-card').forEach(card => {
+    card.onclick = () => _mkOpenEditor(card.dataset.id);
+  });
+}
+
+function _mkOpenEditor(postId) {
+  if(MK_STATE.dirty && !confirm('Tens alterações não guardadas. Sair sem guardar?')) return;
+  MK_STATE.dirty = false;
+  MK_STATE.current = postId ? MK_STATE.posts.find(p => p.id === postId) : null;
+  _mkFillEditor(MK_STATE.current);
+  _mkShowView('mk-editor-view');
+}
+
+function _mkFillEditor(p) {
+  document.getElementById('mk-edit-title').value     = p?.title    || '';
+  document.getElementById('mk-edit-subtitle').value  = p?.subtitle || '';
+  document.getElementById('mk-edit-body').innerHTML  = p?.content  || '';
+  document.getElementById('mk-meta-desc').value      = p?.meta_description || '';
+  document.getElementById('mk-slug').value           = p?.slug     || '';
+  document.getElementById('mk-status-select').value  = p?.status   || 'draft';
+  document.getElementById('mk-status-badge').textContent = MK_STATUS_LABELS[p?.status||'draft'];
+  document.getElementById('mk-status-badge').className   = 'mk-badge ' + (p?.status || 'draft');
+
+  // Featured image
+  _mkRenderFeatured(p?.featured_image_url || null);
+
+  // Language
+  document.querySelectorAll('#marketing-area #mk-lang-seg .mk-seg-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.lang === (p?.language || 'pt'));
+  });
+  // Category
+  document.querySelectorAll('#marketing-area #mk-cat-grid .mk-cat-pick').forEach(b => {
+    b.classList.toggle('active', b.dataset.cat === (p?.category || ''));
+  });
+  // Tags
+  const wrap = document.getElementById('mk-tag-wrap');
+  wrap.querySelectorAll('.mk-tag-chip').forEach(c => c.remove());
+  const input = document.getElementById('mk-tag-input');
+  (p?.tags || []).forEach(t => _mkAddTag(t));
+
+  _mkUpdateWordCount();
+  _mkUpdateMetaCounter();
+  _mkUpdateSEOPreview();
+  _mkUpdateSaveIndicator('Sem alterações');
+  document.getElementById('mk-edit-body').dataset.empty =
+    (document.getElementById('mk-edit-body').textContent.trim().length === 0) ? 'true' : 'false';
+}
+
+function _mkAddTag(text) {
+  const wrap = document.getElementById('mk-tag-wrap');
+  const input = document.getElementById('mk-tag-input');
+  const chip = document.createElement('span');
+  chip.className = 'mk-tag-chip';
+  chip.innerHTML = `${_mkEscapeHtml(text)}<button aria-label="remover tag"><i class="ti ti-x"></i></button>`;
+  wrap.insertBefore(chip, input);
+}
+
+function _mkCollectFormState() {
+  const tags = Array.from(document.querySelectorAll('#marketing-area #mk-tag-wrap .mk-tag-chip'))
+    .map(c => c.firstChild.textContent.trim()).filter(Boolean);
+  const lang = document.querySelector('#marketing-area #mk-lang-seg .mk-seg-btn.active')?.dataset.lang || 'pt';
+  const cat  = document.querySelector('#marketing-area #mk-cat-grid .mk-cat-pick.active')?.dataset.cat || null;
+  return {
+    title:    document.getElementById('mk-edit-title').value.trim(),
+    subtitle: document.getElementById('mk-edit-subtitle').value.trim() || null,
+    slug:     document.getElementById('mk-slug').value.trim(),
+    content:  document.getElementById('mk-edit-body').innerHTML,
+    meta_description: document.getElementById('mk-meta-desc').value.trim() || null,
+    status:   document.getElementById('mk-status-select').value,
+    language: lang,
+    category: cat,
+    tags:     tags
+  };
+}
+
+function _mkUpdateWordCount() {
+  const body = document.getElementById('mk-edit-body');
+  const words = body.textContent.trim().split(/\s+/).filter(Boolean).length;
+  document.getElementById('mk-word-count').textContent = words.toLocaleString('pt-PT');
+  document.getElementById('mk-read-time').textContent = Math.max(1, Math.round(words / 200));
+  body.dataset.empty = words === 0 ? 'true' : 'false';
+}
+function _mkUpdateMetaCounter() {
+  const v = document.getElementById('mk-meta-desc').value;
+  const c = document.getElementById('mk-meta-counter');
+  c.textContent = `${v.length} / 160`;
+  c.classList.toggle('warn', v.length > 160);
+}
+function _mkUpdateSEOPreview() {
+  const t = (document.getElementById('mk-edit-title').value || '').trim();
+  const s = (document.getElementById('mk-slug').value || '').trim();
+  const d = (document.getElementById('mk-meta-desc').value || '').trim();
+  document.getElementById('mk-seo-title-prev').textContent = (t || 'Título do post') + ' · RHC';
+  document.getElementById('mk-seo-desc-prev').textContent  = d || 'A meta description aparece aqui à medida que escreves.';
+  document.getElementById('mk-seo-slug').textContent       = s || '—';
+}
+function _mkUpdateSaveIndicator(text) {
+  const el = document.getElementById('mk-save-label');
+  if(el) el.textContent = text;
+}
+
+// Debounced auto-save: writes draft state to DB 2s after the last edit.
+function _mkAutoSave() {
+  if(MK_STATE.saveTimer) clearTimeout(MK_STATE.saveTimer);
+  MK_STATE.saveTimer = setTimeout(() => _mkSavePost(false), 2000);
+}
+
+async function _mkSavePost(announce) {
+  if(MK_STATE.saving) return;
+  const f = _mkCollectFormState();
+  if(!f.title) { _mkUpdateSaveIndicator('Falta título — não guardado'); return; }
+  if(!f.slug) f.slug = _mkSlugify(f.title);
+  if(!f.slug) { _mkUpdateSaveIndicator('Slug inválido'); return; }
+
+  MK_STATE.saving = true;
+  _mkUpdateSaveIndicator('A guardar…');
+  try {
+    let row;
+    if(!MK_STATE.current?.id) {
+      // INSERT — first save creates the row
+      const payload = { ...f,
+        author_id:   ADMIN.id || null,
+        author_name: ADMIN.name || null
+      };
+      const { data, error } = await supa.from('blog_posts').insert(payload).select().single();
+      if(error) throw error;
+      row = data;
+      MK_STATE.current = row;
+      MK_STATE.posts.unshift(row);
+    } else {
+      const { data, error } = await supa.from('blog_posts')
+        .update(f).eq('id', MK_STATE.current.id).select().single();
+      if(error) throw error;
+      row = data;
+      MK_STATE.current = row;
+      const idx = MK_STATE.posts.findIndex(p => p.id === row.id);
+      if(idx >= 0) MK_STATE.posts[idx] = row;
+    }
+    MK_STATE.dirty = false;
+    const stamp = new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+    _mkUpdateSaveIndicator('Guardado às ' + stamp);
+    _mkRenderStats();
+  } catch(e) {
+    console.warn('mkSave failed:', e);
+    const msg = (e && e.message) || 'erro';
+    if(/duplicate|unique/i.test(msg)) {
+      _mkUpdateSaveIndicator('Slug já existe — muda o slug');
+    } else {
+      _mkUpdateSaveIndicator('Erro ao guardar');
+    }
+  } finally {
+    MK_STATE.saving = false;
+  }
+}
+
+async function _mkPublishPost() {
+  document.getElementById('mk-status-select').value = 'published';
+  MK_STATE.dirty = true;
+  if(!MK_STATE.current?.published_at) {
+    // Inject published_at via direct update after save
+  }
+  await _mkSavePost(true);
+  if(MK_STATE.current?.id && MK_STATE.current.status === 'published' && !MK_STATE.current.published_at) {
+    try {
+      const { data } = await supa.from('blog_posts')
+        .update({ published_at: new Date().toISOString() })
+        .eq('id', MK_STATE.current.id).select().single();
+      if(data) {
+        MK_STATE.current = data;
+        const idx = MK_STATE.posts.findIndex(p => p.id === data.id);
+        if(idx >= 0) MK_STATE.posts[idx] = data;
+      }
+    } catch(e) { console.warn('publish published_at update failed:', e); }
+  }
+  document.getElementById('mk-status-badge').textContent = 'Publicado';
+  document.getElementById('mk-status-badge').className = 'mk-badge published';
+  _mkRenderStats();
+  alert('Post publicado. Aparece em rhc.pt/blog quando a Fase 4 for aplicada.');
+}
+
+function _mkRenderFeatured(url) {
+  const area = document.getElementById('mk-featured-area');
+  if(!url) {
+    area.innerHTML = `
+      <button class="mk-dropzone" id="mk-dropzone">
+        <i class="ti ti-photo-plus"></i>
+        <span class="mk-dropzone-main">Carregar ou arrastar imagem</span>
+        <span class="mk-dropzone-sub">PNG · JPG · WebP — máx. 2 MB</span>
+      </button>`;
+    document.getElementById('mk-dropzone').onclick = () => document.getElementById('mk-image-input').click();
+  } else {
+    area.innerHTML = `
+      <div class="mk-featured-preview">
+        <img src="${_mkEscapeHtml(url)}" alt="">
+        <button class="mk-featured-remove" title="Remover"><i class="ti ti-x"></i></button>
+      </div>`;
+    area.querySelector('.mk-featured-remove').onclick = () => {
+      _mkRenderFeatured(null);
+      if(MK_STATE.current) MK_STATE.current.featured_image_url = null;
+      MK_STATE.dirty = true;
+      // Persist immediately via a one-off update
+      if(MK_STATE.current?.id) {
+        supa.from('blog_posts').update({ featured_image_url: null }).eq('id', MK_STATE.current.id);
+      }
+    };
+  }
+}
+
+async function _mkUploadFeaturedImage(file) {
+  if(file.size > 2*1024*1024) { alert('Imagem demasiado grande (>2MB).'); return; }
+  if(!['image/png','image/jpeg','image/webp'].includes(file.type)) { alert('Formato inválido. Usa PNG, JPG ou WebP.'); return; }
+  _mkUpdateSaveIndicator('A carregar imagem…');
+  try {
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = `${ADMIN.id || 'unknown'}/${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
+    const { error: upErr } = await supa.storage.from(MK_BLOG_BUCKET).upload(path, file, { upsert: false, contentType: file.type });
+    if(upErr) throw upErr;
+    const { data: pub } = supa.storage.from(MK_BLOG_BUCKET).getPublicUrl(path);
+    const url = pub?.publicUrl;
+    if(!url) throw new Error('Falha a obter URL público');
+    _mkRenderFeatured(url);
+    if(MK_STATE.current) MK_STATE.current.featured_image_url = url;
+    MK_STATE.dirty = true;
+    // Persist the URL right away
+    if(MK_STATE.current?.id) {
+      await supa.from('blog_posts').update({ featured_image_url: url }).eq('id', MK_STATE.current.id);
+    } else {
+      // No row yet — trigger an immediate auto-save so the image isn't lost
+      // if the user closes the tab before the 2s debounce.
+      await _mkSavePost(false);
+    }
+    _mkUpdateSaveIndicator('Imagem carregada');
+  } catch(e) {
+    console.warn('Upload failed:', e);
+    alert('Erro ao carregar imagem: ' + ((e && e.message) || 'erro'));
+    _mkUpdateSaveIndicator('Erro ao carregar imagem');
+  }
+}
+
+async function _mkInlineImageUpload() {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'image/png,image/jpeg,image/webp';
+  inp.onchange = async () => {
+    const file = inp.files && inp.files[0]; if(!file) return;
+    if(file.size > 2*1024*1024) { alert('Imagem demasiado grande (>2MB).'); return; }
+    try {
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      const path = `${ADMIN.id || 'unknown'}/inline_${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
+      const { error: upErr } = await supa.storage.from(MK_BLOG_BUCKET).upload(path, file, { upsert: false, contentType: file.type });
+      if(upErr) throw upErr;
+      const { data: pub } = supa.storage.from(MK_BLOG_BUCKET).getPublicUrl(path);
+      const url = pub?.publicUrl;
+      if(url) {
+        document.execCommand('insertImage', false, url);
+        MK_STATE.dirty = true;
+        _mkAutoSave();
+      }
+    } catch(e) { alert('Erro ao carregar imagem: ' + ((e && e.message) || 'erro')); }
+  };
+  inp.click();
+}
 </script>
 </body>
 </html>
