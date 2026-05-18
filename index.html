@@ -1486,10 +1486,33 @@ supa.auth.onAuthStateChange((event, session) => {
   }
 });
 
-// Email template builder — keeps every admin-sent email visually identical to those
-// from the recruiter and candidate portals.
-function buildEmailHTML(body) {
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f3f4f6;padding:24px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+// keep in sync with rhcportal/api/_lib/email-template.js
+// Shared shell for every Resend email sent across the platform.
+function firstNameOf(n) {
+  const v = (n || '').trim();
+  return v ? v.split(/\s+/)[0] : 'there';
+}
+function withFirstName(named, anon, firstName) {
+  return (firstName && firstName !== 'there')
+    ? String(named).replace(/\{name\}/g, firstName)
+    : anon;
+}
+function buildEmailHTML(opts) {
+  if (typeof opts === 'string') opts = { body: opts };
+  const o = opts || {};
+  const eyebrow   = o.eyebrow ? String(o.eyebrow) : '';
+  const title     = o.title ? String(o.title) : '';
+  const preheader = o.preheader ? String(o.preheader) : '';
+  const bodyHTML  = Array.isArray(o.body)
+    ? o.body.filter(Boolean).map(p => `<p style="margin:0 0 16px 0;">${p}</p>`).join('')
+    : (o.body || '');
+  const cta = o.cta && o.cta.link && o.cta.text ? o.cta : null;
+  const _esc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const ctaBlock = cta ? `<p style="margin:24px 0 0 0;text-align:center;"><a href="${_esc(cta.link)}" style="background:#0a0a0f;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:6px;font-weight:600;font-size:14px;display:inline-block;">${cta.text}</a></p>` : '';
+  const eyebrowBlock = eyebrow ? `<tr><td style="padding:28px 40px 0;"><div style="font-size:11px;color:#5DCAA5;text-transform:uppercase;letter-spacing:.12em;font-weight:600;">${eyebrow}</div></td></tr>` : '';
+  const titleBlock = title ? `<tr><td style="padding:${eyebrow ? '10px' : '28px'} 40px 0;"><h1 style="margin:0;font-size:24px;font-weight:700;color:#0a0a0f;letter-spacing:-0.01em;line-height:1.25;">${title}</h1></td></tr>` : '';
+  const preheaderBlock = preheader ? `<span style="display:none!important;visibility:hidden;mso-hide:all;font-size:1px;color:#f3f4f6;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">${preheader}</span>` : '';
+  return `${preheaderBlock}<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f3f4f6;padding:24px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
     <tr><td align="center">
       <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background:#ffffff;border-radius:8px;overflow:hidden;">
         <tr><td style="padding:32px 40px 20px 40px;">
@@ -1498,12 +1521,15 @@ function buildEmailHTML(body) {
           </tr></table>
         </td></tr>
         <tr><td style="padding:0 40px;"><div style="height:2px;background:#5DCAA5;width:40px;line-height:0;font-size:0;">&nbsp;</div></td></tr>
-        <tr><td style="padding:28px 40px 32px 40px;color:#1f2937;font-size:15px;line-height:1.65;">${body}</td></tr>
+        ${eyebrowBlock}
+        ${titleBlock}
+        <tr><td style="padding:18px 40px 32px;color:#1f2937;font-size:15px;line-height:1.65;">${bodyHTML}${ctaBlock}</td></tr>
         <tr><td style="padding:0 40px;"><div style="height:1px;background:#e5e7eb;line-height:0;font-size:0;">&nbsp;</div></td></tr>
         <tr><td style="padding:20px 40px 32px 40px;color:#9ca3af;font-size:12px;line-height:1.7;">
           <p style="margin:0 0 4px 0;"><strong style="color:#6b7280;">RHC</strong></p>
           <p style="margin:0 0 12px 0;"><a href="https://rhc.pt" style="color:#9ca3af;text-decoration:none;">rhc.pt</a> &middot; <a href="mailto:hello@rhc.pt" style="color:#9ca3af;text-decoration:none;">hello@rhc.pt</a></p>
-          <p style="margin:0;color:#b3b8c4;font-size:11px;">This is an automated message. Please do not reply.</p>
+          <p style="margin:0 0 4px 0;color:#b3b8c4;font-size:11px;">This is an automated message. Please do not reply.</p>
+          <p style="margin:0;color:#b3b8c4;font-size:11px;">&copy; RHC. All rights reserved.</p>
         </td></tr>
       </table>
     </td></tr>
@@ -1840,15 +1866,19 @@ async function generateInvite() {
         body: JSON.stringify({
           from: 'RHC Team <convites@rhc.pt>',
           to: [email],
-          subject: 'Connect to RHC',
-          html: buildEmailHTML(`
-            <p style="margin:0 0 20px 0;">Hi,</p>
-            <p style="margin:0 0 18px 0;">Thank you for registering on the RHC platform.</p>
-            <p style="margin:0 0 24px 0;">To start using all features and access available opportunities, please complete your account setup by clicking the button below.</p>
-            <p style="margin:0 0 24px 0;text-align:center;"><a href="${link}" style="background:#0a0a0f;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:6px;font-weight:600;font-size:14px;display:inline-block;">Access RHC Platform</a></p>
-            <p style="margin:0 0 28px 0;font-size:13px;color:#6b7280;">If you have any questions or need support, we're here to help. Just reply to this thread or email <a href="mailto:hello@rhc.pt" style="color:#0d8067;text-decoration:none;">hello@rhc.pt</a>.</p>
-            <p style="margin:0;">Best regards,<br><strong>The RHC Team</strong></p>
-          `)
+          subject: 'Welcome to RHC - Activate your recruiter portal',
+          html: buildEmailHTML({
+            preheader: "You've been invited to RHC. Activate your account.",
+            eyebrow:   'WELCOME TO RHC',
+            title:     'Welcome to RHC.',
+            body: [
+              `The RHC team has invited <strong>${company}</strong> to join RHC — the AI-powered recruitment platform.`,
+              `Click the button below to activate your recruiter account and start posting jobs, reviewing candidates, and using our intelligent screening tools.`,
+              `This invite link is valid for 7 days.`,
+              `If you have any questions, just reply to this email or write to <a href="mailto:hello@rhc.pt" style="color:#0d8067;text-decoration:none;">hello@rhc.pt</a>.`
+            ],
+            cta: { text: 'Activate my account', link: link }
+          })
         })
       });
 
@@ -2344,22 +2374,28 @@ async function replyTicket() {
   try {
     const _emHdr = await _supaAuthHeader();
     if(!_emHdr) { showToast('⚠️ Sessão inválida — volta a fazer login'); return; }
+    const _ticketShortId = String(_currentTicket.id || '').replace(/-/g,'').slice(-4).toUpperCase();
+    const _ticketFirst   = firstNameOf(_currentTicket.name);
+    const _replyBlock    = `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="background:#f9fafb;border-left:3px solid #5DCAA5;border-radius:4px;padding:14px 18px;margin:0;width:100%;">
+      <tr><td style="font-size:14px;color:#374151;line-height:1.65;white-space:pre-wrap;">${reply}</td></tr>
+    </table>`;
     await fetch('https://rhcportal.vercel.app/api/send-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': _emHdr },
       body: JSON.stringify({
         from: 'RHC Suporte <noreply@rhc.pt>',
         to: [_currentTicket.email],
-        subject: `Response to your support request - RHC`,
-        html: buildEmailHTML(`
-          <p style="margin:0 0 20px 0;">Hi,</p>
-          <p style="margin:0 0 18px 0;">We've responded to your support request: <strong>${_currentTicket.assunto}</strong></p>
-          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="background:#f9fafb;border-left:3px solid #5DCAA5;border-radius:4px;padding:14px 18px;margin:0 0 24px 0;width:100%;">
-            <tr><td style="font-size:14px;color:#374151;line-height:1.65;white-space:pre-wrap;">${reply}</td></tr>
-          </table>
-          <p style="margin:0 0 28px 0;font-size:14px;color:#6b7280;">If you need further help, please log in to the candidate portal or reply to this email.</p>
-          <p style="margin:0;">Best regards,<br><strong>The RHC Team</strong></p>
-        `)
+        subject: `New reply on your ticket #${_ticketShortId}`,
+        html: buildEmailHTML({
+          preheader: 'A new reply has been added to your ticket.',
+          eyebrow:   'SUPPORT REPLY',
+          title:     withFirstName("Hi {name}, we've replied to your ticket.", "We've replied to your ticket.", _ticketFirst),
+          body: [
+            `Subject: <strong>${_currentTicket.assunto}</strong>`,
+            _replyBlock,
+            `If you need further help, log in to the portal and reply on the ticket, or just reply to this email.`
+          ]
+        })
       })
     });
   } catch(e) { console.warn('Email send failed:', e); }
@@ -2423,8 +2459,8 @@ async function _doResendInvite() {
   }
   if(_currentTicket.lang === 'en') inviteLink += '&lang=en';
 
-  const isEN = _currentTicket.lang === 'en';
-  const firstName = (_currentTicket.name||'Candidate').split(' ')[0];
+  const firstName = firstNameOf(_currentTicket.name);
+  const _companyForRenew = _currentTicket.company || 'RHC';
 
   // Send new invite email
   const _emHdr = await _supaAuthHeader();
@@ -2435,15 +2471,18 @@ async function _doResendInvite() {
     body: JSON.stringify({
       from: 'RHC Recrutamento <noreply@rhc.pt>',
       to: [_currentTicket.email],
-      subject: `Your application link has been renewed - ${_currentTicket.job}`,
-      html: buildEmailHTML(`
-        <p style="margin:0 0 20px 0;">Hi ${firstName},</p>
-        <p style="margin:0 0 18px 0;">We're sorry you encountered a problem with your application for the position of <strong>${_currentTicket.job}</strong> at <strong>${_currentTicket.company||'RHC'}</strong>.</p>
-        <p style="margin:0 0 24px 0;">We've reset your profile and prepared a new application link so you can start the process again without any issues. Click the button below to continue.</p>
-        <p style="margin:0 0 24px 0;text-align:center;"><a href="${inviteLink}" style="background:#0a0a0f;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:6px;font-weight:600;font-size:14px;display:inline-block;">Start new application</a></p>
-        <p style="margin:0 0 28px 0;font-size:13px;color:#6b7280;">If you encounter any further issues, please don't hesitate to reach out by replying to this email.</p>
-        <p style="margin:0;">Best regards,<br><strong>The RHC Team</strong></p>
-      `)
+      subject: `Your application link has been renewed - ${_currentTicket.job} at ${_companyForRenew}`,
+      html: buildEmailHTML({
+        preheader: 'Your application link is ready to use again.',
+        eyebrow:   'LINK RENEWED',
+        title:     withFirstName('Your link is ready again, {name}.', 'Your application link is ready again.', firstName),
+        body: [
+          `We're sorry you encountered a problem with your application for the <strong>${_currentTicket.job}</strong> role at <strong>${_companyForRenew}</strong>.`,
+          `We've reset your profile and prepared a new application link so you can start again without any issues. Click below to continue.`,
+          `If you encounter any further issues, please reply to this email.`
+        ],
+        cta: { text: 'Start new application', link: inviteLink }
+      })
     })
   });
 
