@@ -369,7 +369,8 @@
         <button class="btn-primary" style="width:auto;padding:11px 24px;margin-top:0;" onclick="openModal('modal-add-admin')">+ Adicionar acesso</button>
       </div>
       <div class="table-wrap">
-        <div class="table-head" style="grid-template-columns:2fr 2fr 1fr 1fr;">
+        <div class="table-head" style="grid-template-columns:48px 2fr 2fr 1fr 1fr;">
+          <div></div>
           <div>Nome</div>
           <div>Email</div>
           <div>Tipo</div>
@@ -949,68 +950,192 @@
     #marketing-area .mk-main { padding: 1rem; }
   }
 
-  /* Profile modal — single modal shared by every role (admin/suporte/marketing).
-     Opened via openUserProfile() from the .app-user click handler. */
-  #user-profile-modal {
-    position: fixed; inset: 0; z-index: 9999;
-    background: rgba(0,0,0,.55);
-    display: none; align-items: center; justify-content: center;
-    padding: 16px;
+  /* Profile modal — centered popup shared by every role
+     (admin/suporte/marketing). Opened via openUserProfile() from the
+     .app-user click handler. Writes name + photo_url straight to the
+     superadmins row via the superadmins_update_own RLS policy. */
+  #modal-profile.modal-bg {
+    background: rgba(4,4,8,.78);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    padding: 24px;
+    z-index: 9999;
   }
-  #user-profile-modal.open { display: flex; }
-  #user-profile-modal .up-card {
-    background: var(--ink2); border: 1px solid var(--border);
-    border-radius: 16px;
-    width: 100%; max-width: 380px;
-    padding: 28px 24px 22px;
-    box-shadow: 0 24px 60px rgba(0,0,0,.45);
+  #modal-profile .modal-box {
+    background: var(--ink2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 24px 28px;
+    width: 460px;
+    max-width: 100%;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    box-shadow: 0 30px 80px rgba(0,0,0,.5);
     font-family: var(--font-sans);
-    position: relative;
   }
-  #user-profile-modal .up-close {
-    position: absolute; top: 12px; right: 12px;
-    width: 30px; height: 30px; border: none; background: transparent;
-    color: var(--muted); cursor: pointer; font-size: 18px;
-    display: flex; align-items: center; justify-content: center;
-    border-radius: 50%;
+  #modal-profile .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
   }
-  #user-profile-modal .up-close:hover { background: var(--ink3); color: var(--paper); }
-  #user-profile-modal .up-av {
-    width: 64px; height: 64px; border-radius: 50%;
+  #modal-profile .modal-title {
+    font-family: var(--font-head); font-size: 18px; font-weight: 700;
+    letter-spacing: -0.015em; color: var(--paper);
+    display: flex; align-items: center; gap: 9px;
+  }
+  #modal-profile .modal-title i { color: var(--accent); font-size: 18px; }
+  #modal-profile .modal-close {
+    background: transparent; border: 1px solid var(--border2);
+    width: 30px; height: 30px; border-radius: 50%;
+    color: var(--muted); cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: inherit;
+    transition: color .15s, background .15s, border-color .15s;
+  }
+  #modal-profile .modal-close:hover { color: var(--paper); background: var(--ink3); }
+  #modal-profile .modal-close i { font-size: 15px; }
+
+  /* Horizontal photo row */
+  #modal-profile .profile-photo-row {
+    display: flex; align-items: center; gap: 18px;
+    padding: 14px;
+    background: var(--ink); border: 1px solid var(--border);
+    border-radius: 10px; margin-bottom: 18px;
+  }
+  #modal-profile .profile-photo {
+    width: 70px; height: 70px; border-radius: 50%;
     background: linear-gradient(135deg, var(--accent), var(--accent2));
     color: #0a0a0f;
     font-family: var(--font-head); font-weight: 700; font-size: 22px;
     display: flex; align-items: center; justify-content: center;
-    margin: 0 auto 14px;
+    flex-shrink: 0;
+    border: 1px solid var(--border2);
+    overflow: hidden;
+    background-size: cover; background-position: center;
   }
-  #user-profile-modal .up-name {
-    font-family: var(--font-head); font-weight: 700;
-    font-size: 18px; color: var(--paper); text-align: center;
-    letter-spacing: -0.015em; margin: 0 0 4px;
+  #modal-profile .profile-photo-actions { flex: 1; min-width: 0; }
+  #modal-profile .profile-photo-actions .ttl { font-size: 13.5px; color: var(--paper); font-weight: 600; margin-bottom: 3px; }
+  #modal-profile .profile-photo-actions .sub { font-size: 11.5px; color: var(--muted); margin-bottom: 9px; }
+  #modal-profile .photo-btns { display: flex; gap: 6px; }
+  #modal-profile .photo-btn {
+    background: var(--ink3); border: 1px solid var(--border2);
+    color: var(--paper); font-size: 11.5px; font-weight: 500;
+    padding: 6px 11px; border-radius: 7px; cursor: pointer;
+    font-family: inherit;
+    display: inline-flex; align-items: center; gap: 5px;
+    transition: color .15s, border-color .15s, background .15s;
   }
-  #user-profile-modal .up-email {
-    font-size: 13px; color: var(--muted); text-align: center;
-    margin: 0 0 14px; word-break: break-all;
+  #modal-profile .photo-btn:hover { border-color: rgba(245,243,239,.25); }
+  #modal-profile .photo-btn.danger { color: var(--red); border-color: rgba(226,107,107,.25); background: rgba(226,107,107,.06); }
+  #modal-profile .photo-btn.danger:hover { background: rgba(226,107,107,.14); border-color: rgba(226,107,107,.45); }
+  #modal-profile .photo-btn i { font-size: 13px; }
+  #modal-profile .profile-photo-err {
+    margin-top: 8px; font-size: 12px; color: var(--red);
+    background: rgba(226,107,107,.08); border: 1px solid rgba(226,107,107,.2);
+    padding: 6px 10px; border-radius: 6px;
   }
-  #user-profile-modal .up-role {
-    display: block; text-align: center;
-    margin: 0 auto 20px; padding: 4px 12px;
+  #modal-profile .profile-photo-err[hidden] { display: none; }
+
+  /* Form groups */
+  #modal-profile .form-group { margin-bottom: 14px; }
+  #modal-profile .form-label {
+    display: block; font-size: 11px; font-weight: 600;
+    color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+  #modal-profile .form-label.with-lock { display: flex; align-items: center; gap: 6px; }
+  #modal-profile .form-label.with-lock i { font-size: 12px; color: rgba(245,243,239,.3); }
+  #modal-profile .form-input {
+    width: 100%; background: var(--ink);
+    border: 1px solid var(--border2); border-radius: 10px;
+    padding: 11px 13px; font-size: 14px; color: var(--paper);
+    outline: none; box-sizing: border-box; font-family: inherit;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  #modal-profile .form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,229,160,.12); }
+  #modal-profile .form-input.readonly { background: var(--ink2); color: var(--muted); cursor: not-allowed; }
+
+  /* Role pill (decorative, kept from old design) */
+  #modal-profile .up-role-wrap { padding: 4px 0; }
+  #modal-profile .up-role {
+    display: inline-block; padding: 4px 12px;
     background: var(--ink3); border: 1px solid var(--border2);
     border-radius: 100px;
     font-size: 11px; font-weight: 600; color: var(--paper);
     text-transform: uppercase; letter-spacing: 0.08em;
-    width: fit-content;
   }
-  #user-profile-modal .up-role.admin { background: rgba(0,229,160,.14); color: var(--accent); border-color: rgba(0,229,160,.3); }
-  #user-profile-modal .up-logout {
-    width: 100%; padding: 11px;
-    background: var(--accent); color: #0a0a0f; border: none;
-    border-radius: 8px; font-size: 13px; font-weight: 500;
-    cursor: pointer; font-family: inherit;
-    display: flex; align-items: center; justify-content: center; gap: 6px;
+  #modal-profile .up-role.admin { background: rgba(0,229,160,.14); color: var(--accent); border-color: rgba(0,229,160,.3); }
+  #modal-profile .up-role.marketing { background: rgba(192,137,235,.14); color: #c089eb; border-color: rgba(192,137,235,.3); }
+
+  /* Save/Cancel + logout */
+  #modal-profile .modal-actions {
+    display: flex; gap: 10px;
+    margin-top: 20px; padding-top: 18px;
+    border-top: 1px solid var(--border);
   }
-  #user-profile-modal .up-logout:hover { background: var(--accent2); }
-  #user-profile-modal .up-logout i { font-size: 15px; }
+  #modal-profile .modal-actions .btn { flex: 1; justify-content: center; padding: 9px 16px; font-size: 13px; }
+  #modal-profile .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 9px 16px; border-radius: 10px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    border: 1px solid transparent; font-family: inherit;
+    transition: background .15s, border-color .15s; white-space: nowrap;
+  }
+  #modal-profile .btn i { font-size: 16px; }
+  #modal-profile .btn.primary { background: var(--accent); color: #0a0a0f; }
+  #modal-profile .btn.primary:hover { background: var(--accent2); }
+  #modal-profile .btn.primary:disabled { opacity: .5; cursor: not-allowed; }
+  #modal-profile .btn.ghost { background: transparent; border-color: var(--border2); color: var(--paper); }
+  #modal-profile .btn.ghost:hover { background: var(--ink3); }
+  #modal-profile .profile-save-err {
+    margin-top: 10px; font-size: 12px; color: var(--red);
+    background: rgba(226,107,107,.08); border: 1px solid rgba(226,107,107,.2);
+    padding: 8px 12px; border-radius: 8px;
+  }
+  #modal-profile .profile-save-err[hidden] { display: none; }
+  #modal-profile .btn-logout-row {
+    width: 100%; margin-top: 10px;
+    padding: 11px 16px; background: transparent;
+    border: 1px solid rgba(226,107,107,.22);
+    border-radius: 10px; color: var(--red);
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    font-family: inherit;
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    transition: background .15s, border-color .15s;
+  }
+  #modal-profile .btn-logout-row:hover { background: rgba(226,107,107,.08); border-color: rgba(226,107,107,.4); }
+  #modal-profile .btn-logout-row i { font-size: 16px; }
+
+  /* Logout confirmation popup — same .modal-bg pattern, btn reused */
+  #modal-logout-confirm.modal-bg {
+    background: rgba(4,4,8,.78);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 10000;
+  }
+  #modal-logout-confirm .btn,
+  #modal-logout-confirm .btn-logout-row {
+    font-family: inherit;
+  }
+  #modal-logout-confirm .btn.ghost {
+    background: transparent; border: 1px solid var(--border2); color: var(--paper);
+    border-radius: 10px; cursor: pointer;
+  }
+  #modal-logout-confirm .btn.ghost:hover { background: var(--ink3); }
+  #modal-logout-confirm .btn-logout-row {
+    background: transparent; border: 1px solid rgba(226,107,107,.22);
+    border-radius: 10px; color: var(--red);
+    font-weight: 600; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    transition: background .15s, border-color .15s;
+  }
+  #modal-logout-confirm .btn-logout-row:hover { background: rgba(226,107,107,.08); border-color: rgba(226,107,107,.4); }
+
+  /* Sidebar user-card avatar: keep the gradient/initials fallback, but
+     allow a background-image to take over when ADMIN.photo_url is set. */
+  .app-user .app-user-av {
+    background-size: cover;
+    background-position: center;
+  }
 </style>
 
 <div id="marketing-area" class="app-shell" style="display:none;">
@@ -1322,16 +1447,77 @@
     </main>
 </div>
 
-<!-- Shared profile modal — opened by openUserProfile() from any sidebar
-     user card (admin / suporte / marketing). -->
-<div id="user-profile-modal" onclick="if(event.target.id==='user-profile-modal') closeUserProfile()">
-  <div class="up-card">
-    <button class="up-close" onclick="closeUserProfile()" aria-label="Fechar"><i class="ti ti-x"></i></button>
-    <div class="up-av" id="up-av">—</div>
-    <h3 class="up-name" id="up-name">—</h3>
-    <p class="up-email" id="up-email">—</p>
-    <span class="up-role" id="up-role">—</span>
-    <button class="up-logout" onclick="closeUserProfile();doLogout();"><i class="ti ti-logout"></i> Sair</button>
+<!-- Profile modal — opened by openUserProfile() from any sidebar user card
+     (admin / suporte / marketing). Now editable: writes name + photo_url
+     directly to the superadmins row via the superadmins_update_own RLS
+     policy (each admin can only update their own row). -->
+<div class="modal-bg" id="modal-profile" onclick="if(event.target===this) closeUserProfile()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title"><i class="ti ti-user"></i><span>Perfil</span></div>
+      <button class="modal-close" onclick="closeUserProfile()" title="Fechar"><i class="ti ti-x"></i></button>
+    </div>
+
+    <!-- Photo row -->
+    <div class="profile-photo-row">
+      <div class="profile-photo" id="up-photo">—</div>
+      <div class="profile-photo-actions">
+        <div class="ttl">Foto de perfil</div>
+        <div class="sub">JPEG, PNG ou WEBP. Máx. 5 MB (será comprimida).</div>
+        <div class="photo-btns">
+          <button class="photo-btn" onclick="document.getElementById('up-photo-input').click()"><i class="ti ti-upload"></i>Carregar</button>
+          <button class="photo-btn danger" onclick="removeAdminPhoto()"><i class="ti ti-trash"></i>Remover</button>
+        </div>
+        <input type="file" id="up-photo-input" accept="image/png,image/jpeg,image/webp" style="display:none;" onchange="handleAdminPhotoUpload(event)" />
+        <div class="profile-photo-err" id="up-photo-err" hidden></div>
+      </div>
+    </div>
+
+    <!-- Name (editable) -->
+    <div class="form-group">
+      <label class="form-label">Nome</label>
+      <input class="form-input" id="up-name-input" type="text" placeholder="O teu nome" maxlength="80" />
+    </div>
+
+    <!-- Email (readonly + lock) -->
+    <div class="form-group">
+      <label class="form-label with-lock">Email <i class="ti ti-lock"></i></label>
+      <input class="form-input readonly" id="up-email-input" value="" readonly />
+    </div>
+
+    <!-- Role pill -->
+    <div class="form-group" style="margin-bottom:0;">
+      <label class="form-label with-lock">Função <i class="ti ti-lock"></i></label>
+      <div class="up-role-wrap"><span class="up-role" id="up-role">—</span></div>
+    </div>
+
+    <!-- Save/Cancel row -->
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closeUserProfile()" id="up-cancel-btn">Cancelar</button>
+      <button class="btn primary" id="up-save-btn" onclick="saveAdminProfile()"><i class="ti ti-check"></i><span>Guardar alterações</span></button>
+    </div>
+
+    <!-- Save error -->
+    <div class="profile-save-err" id="up-save-err" hidden></div>
+
+    <!-- Logout (danger) -->
+    <button class="btn-logout-row" onclick="confirmAdminLogoutFromProfile()"><i class="ti ti-logout"></i><span>Terminar sessão</span></button>
+  </div>
+</div>
+
+<!-- Logout confirmation popup — replaces the native confirm() for the
+     styled experience the recruiter portal already uses. -->
+<div class="modal-bg" id="modal-logout-confirm" onclick="if(event.target===this) closeModal('modal-logout-confirm')">
+  <div class="modal-box" style="width:380px;max-width:100%;padding:24px 26px;text-align:center;">
+    <div style="width:48px;height:48px;border-radius:50%;background:rgba(226,107,107,.12);border:1px solid rgba(226,107,107,.25);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">
+      <i class="ti ti-logout" style="font-size:22px;color:var(--red);"></i>
+    </div>
+    <div style="font-family:var(--font-head, system-ui);font-size:18px;font-weight:700;color:var(--paper);letter-spacing:-0.015em;margin-bottom:8px;">Terminar sessão?</div>
+    <div style="font-size:13.5px;color:rgba(245,243,239,.65);line-height:1.55;margin-bottom:20px;">Tens a certeza que queres terminar a sessão?</div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn ghost" onclick="closeModal('modal-logout-confirm')" style="flex:1;justify-content:center;padding:9px 16px;font-size:13px;">Cancelar</button>
+      <button class="btn-logout-row" onclick="_executeAdminLogout()" style="flex:1;margin-top:0;justify-content:center;"><i class="ti ti-logout"></i><span>Terminar sessão</span></button>
+    </div>
   </div>
 </div>
 
@@ -1589,7 +1775,7 @@ async function doLogin() {
     // read only their own row, so this is intentionally narrow.
     const { data: profile, error: profErr } = await supa
       .from('superadmins')
-      .select('id,name,email,role')
+      .select('id,name,email,role,photo_url')
       .eq('email', email)
       .maybeSingle();
 
@@ -1645,15 +1831,16 @@ async function enterAdmin() {
   }
   // Admin/suporte shell uses CSS grid (sidebar + main), not block.
   document.getElementById('main-page').style.display = 'grid';
-  // Fill the sidebar user card (name, initials, role label).
-  const _av = document.getElementById('nav-user-av');
-  if(_av) _av.textContent = initials(ADMIN.name || ADMIN.email || '?');
+  // Fill the sidebar user card (name + role label). The avatar (photo or
+  // initials) is rendered by applyAdminProfile() right after, so it stays
+  // in sync with both ADMIN.photo_url and ADMIN.name on every mount.
   document.getElementById('nav-user-name').textContent = ADMIN.name || ADMIN.email || '—';
   const _roleLbl = document.getElementById('nav-user-role-label');
   if(_roleLbl) _roleLbl.textContent = (CURRENT_ROLE === 'suporte') ? 'Suporte' : 'Admin';
   // Wire the user card click → open profile modal.
   const _card = document.getElementById('admin-user-card');
   if(_card) _card.onclick = openUserProfile;
+  applyAdminProfile();
   applyRoleUI();
   await loadData();
 }
@@ -1831,8 +2018,16 @@ function renderAdmins() {
       roleLabel = isEN ? 'SUPPORT' : 'SUPORTE';
       badgeStyle = 'background:#ffffff;color:#1a1a1a;border:1px solid #e0e0e0;';
     }
+    // 32px avatar — photo_url if set, otherwise initials. The CSS for the
+    // initials fallback mirrors the sidebar .av style so it stays consistent.
+    const initials = (a.name || a.email || '?').split(/\s+/).map(s => s[0] || '').filter(Boolean).slice(0,2).join('').toUpperCase() || '?';
+    const avStyle  = a.photo_url
+      ? `background-image:url(${a.photo_url});background-size:cover;background-position:center;`
+      : '';
+    const avInner  = a.photo_url ? '' : initials;
     return `
-    <div class="table-row" style="grid-template-columns:2fr 2fr 1fr 1fr;">
+    <div class="table-row" style="grid-template-columns:48px 2fr 2fr 1fr 1fr;align-items:center;">
+      <div><div style="width:32px;height:32px;border-radius:50%;background:#1a1a1a;color:#aaa;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;border:1px solid #2a2a2a;${avStyle}">${avInner}</div></div>
       <div style="font-size:13px;color:#ddd;">${a.name}</div>
       <div style="font-size:13px;color:#aaa;">${a.email}</div>
       <div><span style="${badgeStyle}font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 9px;border-radius:6px;">${roleLabel}</span></div>
@@ -2556,7 +2751,7 @@ function showToast(msg, opts) {
     if(!session?.user?.email) return;
     const { data: profile } = await supa
       .from('superadmins')
-      .select('id,name,email,role')
+      .select('id,name,email,role,photo_url')
       .eq('email', session.user.email)
       .maybeSingle();
     if(!profile) {
@@ -3160,29 +3355,215 @@ async function _mkUploadFeaturedImage(file) {
   }
 }
 
-// Shared profile modal — opened from any role's user card. Adapts content
-// to whatever ADMIN object is in scope (name/email/role). Closes on Esc or
-// on backdrop click (the latter is wired inline on the modal element).
+/* ──────────────────────────────────────────────────────────────
+   Profile modal — backed by superadmins (name + photo_url). Each
+   admin can update only their own row via superadmins_update_own.
+   ────────────────────────────────────────────────────────────── */
+
+function _adminInitials() {
+  const src = (ADMIN && (ADMIN.name || ADMIN.email)) || '?';
+  return String(src).split(/\s+/).map(s => s[0] || '').filter(Boolean).slice(0,2).join('').toUpperCase() || '?';
+}
+
+// Renders the avatar in a target element: either a backgroundImage when
+// photoUrl is a non-empty string, or initials text fallback.
+function _renderAvatarInto(el, photoUrl, initials) {
+  if(!el) return;
+  if(photoUrl) {
+    el.style.backgroundImage = `url(${photoUrl})`;
+    el.textContent = '';
+  } else {
+    el.style.backgroundImage = '';
+    el.textContent = initials || '?';
+  }
+}
+
+// Refresh the sidebar user-card (and any other place that mirrors the
+// admin's identity) to match the current ADMIN object.
+function applyAdminProfile() {
+  if(!ADMIN) return;
+  const name = ADMIN.name || ADMIN.email || '—';
+  const navName = document.getElementById('nav-user-name');
+  if(navName) navName.textContent = name;
+  // Sidebar avatar lives at #nav-user-av inside #admin-user-card. Render
+  // the photo if present, fallback to initials.
+  const av = document.getElementById('nav-user-av');
+  if(av) _renderAvatarInto(av, ADMIN.photo_url, _adminInitials());
+}
+
+// Per-modal pending state. We don't write to ADMIN.photo_url until the
+// user clicks Save, so a Cancel can revert cleanly.
+let _adminPendingPhoto = undefined; // undefined = no change, null = remove, string = new data URL
+
 function openUserProfile() {
-  const modal = document.getElementById('user-profile-modal');
+  const modal = document.getElementById('modal-profile');
   if(!modal || !ADMIN) return;
-  const initials = (ADMIN.name || ADMIN.email || '?').split(' ').map(s=>s[0]||'').slice(0,2).join('').toUpperCase();
-  document.getElementById('up-av').textContent = initials || '?';
-  document.getElementById('up-name').textContent = ADMIN.name || ADMIN.email || '—';
-  document.getElementById('up-email').textContent = ADMIN.email || '—';
+  _adminPendingPhoto = undefined;
+  // Populate fields from the live ADMIN object.
+  document.getElementById('up-name-input').value = ADMIN.name || '';
+  document.getElementById('up-email-input').value = ADMIN.email || '';
   const role = (ADMIN.role || 'admin').toLowerCase();
   const roleLabel = role === 'admin' ? 'Admin' : role === 'marketing' ? 'Marketing' : 'Suporte';
   const rolePill = document.getElementById('up-role');
-  rolePill.textContent = roleLabel;
-  rolePill.className = 'up-role' + (role === 'admin' ? ' admin' : '');
+  if(rolePill) {
+    rolePill.textContent = roleLabel;
+    rolePill.className = 'up-role' + (role === 'admin' ? ' admin' : role === 'marketing' ? ' marketing' : '');
+  }
+  _renderAvatarInto(document.getElementById('up-photo'), ADMIN.photo_url, _adminInitials());
+  // Clear any leftover error state.
+  const photoErr = document.getElementById('up-photo-err');
+  if(photoErr) { photoErr.hidden = true; photoErr.textContent = ''; }
+  const saveErr  = document.getElementById('up-save-err');
+  if(saveErr)  { saveErr.hidden = true;  saveErr.textContent = ''; }
   modal.classList.add('open');
+  setTimeout(() => document.getElementById('up-name-input')?.focus(), 200);
 }
+
 function closeUserProfile() {
-  const modal = document.getElementById('user-profile-modal');
+  const modal = document.getElementById('modal-profile');
   if(modal) modal.classList.remove('open');
+  // Reset the file input so the same file can be picked again next time.
+  const fi = document.getElementById('up-photo-input');
+  if(fi) fi.value = '';
 }
+
+// Center-crop + resize to 200x200 and re-encode as JPEG. Iterates quality
+// downward until the base64 data URL is under ~100 KB (the column is
+// text and we trust the policy + UI to keep rows small).
+async function _compressAdminPhoto(file) {
+  if(!file) throw new Error('Sem ficheiro.');
+  if(!/^image\/(jpe?g|png|webp)$/.test(file.type)) {
+    throw new Error('Formato não suportado. Usa JPEG, PNG ou WEBP.');
+  }
+  if(file.size > 5 * 1024 * 1024) {
+    throw new Error('Ficheiro demasiado grande (>5 MB).');
+  }
+  const dataURL = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload  = () => res(r.result);
+    r.onerror = () => rej(new Error('Erro ao ler o ficheiro.'));
+    r.readAsDataURL(file);
+  });
+  const img = await new Promise((res, rej) => {
+    const i = new Image();
+    i.onload  = () => res(i);
+    i.onerror = () => rej(new Error('Não foi possível ler a imagem.'));
+    i.src = dataURL;
+  });
+  const target = 200;
+  const canvas = document.createElement('canvas');
+  canvas.width = target; canvas.height = target;
+  const ctx = canvas.getContext('2d');
+  const side = Math.min(img.width, img.height);
+  const sx = (img.width  - side) / 2;
+  const sy = (img.height - side) / 2;
+  ctx.drawImage(img, sx, sy, side, side, 0, 0, target, target);
+  const MAX = 100 * 1024;
+  for(const q of [0.85, 0.7, 0.55, 0.4, 0.3, 0.22]) {
+    const out = canvas.toDataURL('image/jpeg', q);
+    if(out.length <= MAX) return out;
+  }
+  // Final fallback — should fit easily at 0.22 but just in case.
+  return canvas.toDataURL('image/jpeg', 0.2);
+}
+
+async function handleAdminPhotoUpload(event) {
+  const file = event.target.files && event.target.files[0];
+  if(!file) return;
+  const errEl = document.getElementById('up-photo-err');
+  if(errEl) { errEl.hidden = true; errEl.textContent = ''; }
+  try {
+    const compressed = await _compressAdminPhoto(file);
+    _adminPendingPhoto = compressed;
+    _renderAvatarInto(document.getElementById('up-photo'), compressed, _adminInitials());
+  } catch(e) {
+    if(errEl) { errEl.textContent = e.message || 'Erro a processar imagem.'; errEl.hidden = false; }
+  } finally {
+    event.target.value = '';
+  }
+}
+
+function removeAdminPhoto() {
+  _adminPendingPhoto = null;
+  _renderAvatarInto(document.getElementById('up-photo'), null, _adminInitials());
+}
+
+async function saveAdminProfile() {
+  if(!ADMIN || !ADMIN.id) return;
+  const nameEl = document.getElementById('up-name-input');
+  const errEl  = document.getElementById('up-save-err');
+  const btn    = document.getElementById('up-save-btn');
+  const newName = (nameEl?.value || '').trim();
+  if(errEl) { errEl.hidden = true; errEl.textContent = ''; }
+  if(!newName) {
+    if(errEl) { errEl.textContent = 'O nome não pode ficar vazio.'; errEl.hidden = false; }
+    return;
+  }
+  // Only send the fields that actually changed, so we don't fail the
+  // UPDATE on a stale photo column.
+  const patch = {};
+  if(newName !== (ADMIN.name || '')) patch.name = newName;
+  if(_adminPendingPhoto !== undefined) patch.photo_url = _adminPendingPhoto; // null clears it
+  if(Object.keys(patch).length === 0) { closeUserProfile(); return; }
+  if(btn) { btn.disabled = true; btn.querySelector('span').textContent = 'A guardar...'; }
+  try {
+    const { data, error } = await supa
+      .from('superadmins')
+      .update(patch)
+      .eq('id', ADMIN.id)
+      .select('id,name,email,role,photo_url')
+      .single();
+    if(error || !data) {
+      if(errEl) {
+        errEl.textContent = (error?.message) || 'Erro a guardar. Tenta novamente.';
+        errEl.hidden = false;
+      }
+      return;
+    }
+    // Reflect back in memory + sidebar.
+    ADMIN.name = data.name;
+    ADMIN.photo_url = data.photo_url;
+    applyAdminProfile();
+    // Keep the Acessos list in sync if it's already loaded.
+    if(STATE && Array.isArray(STATE.admins)) {
+      const row = STATE.admins.find(a => a.id === ADMIN.id);
+      if(row) { row.name = data.name; row.photo_url = data.photo_url; }
+      if(typeof renderAdmins === 'function') {
+        try { renderAdmins(); } catch(e) { /* page may not be mounted */ }
+      }
+    }
+    closeUserProfile();
+    showToast('✓ Perfil actualizado');
+  } catch(e) {
+    if(errEl) { errEl.textContent = 'Erro de ligação. Tenta novamente.'; errEl.hidden = false; }
+  } finally {
+    if(btn) { btn.disabled = false; btn.querySelector('span').textContent = 'Guardar alterações'; }
+  }
+}
+
+// ── Logout confirmation popup (replaces the legacy native confirm/direct
+//    "Sair" button). Uses the same .modal-bg pattern as the other admin
+//    modals; ESC + click-outside close it without firing logout.
+function confirmAdminLogoutFromProfile() {
+  closeUserProfile();
+  const m = document.getElementById('modal-logout-confirm');
+  if(m) m.classList.add('open');
+}
+function _executeAdminLogout() {
+  const m = document.getElementById('modal-logout-confirm');
+  if(m) m.classList.remove('open');
+  doLogout();
+}
+
+// ESC closes whichever profile-related modal is currently open. Backdrop
+// clicks are already covered by the generic .modal-bg backdrop handler
+// elsewhere in the file.
 document.addEventListener('keydown', (e) => {
-  if(e.key === 'Escape') closeUserProfile();
+  if(e.key !== 'Escape') return;
+  ['modal-profile','modal-logout-confirm'].forEach(id => {
+    const m = document.getElementById(id);
+    if(m && m.classList.contains('open')) m.classList.remove('open');
+  });
 });
 
 async function _mkInlineImageUpload() {
