@@ -382,13 +382,79 @@
 
     <!-- TICKETS PAGE -->
     <div class="tab-panel" id="tab-tickets">
-      <div class="page-header">
-        <div>
-          <div class="page-title" style="text-transform:none;letter-spacing:0;">Tickets de Suporte</div>
-          <div class="page-sub">Pedidos de ajuda dos candidatos</div>
-        </div>
+      <div class="tk-split">
+        <!-- LIST PANE (left) -->
+        <aside class="tk-list-pane">
+          <div class="tk-list-head">
+            <div class="tk-list-title">
+              <span id="tk-list-title-text">Tickets</span>
+              <span class="tk-count" id="tk-list-count">0</span>
+            </div>
+          </div>
+          <div class="tk-search-wrap">
+            <i class="ti ti-search"></i>
+            <input id="tk-search" type="text" placeholder="Pesquisar..." oninput="_filterTickets()" />
+          </div>
+          <div class="tk-filter-row">
+            <button class="tk-filter active" data-filter="all"        onclick="_setFilter('all')"><span id="tk-flbl-all">Todos</span> <span id="tk-cnt-all">0</span></button>
+            <button class="tk-filter"        data-filter="em_analise" onclick="_setFilter('em_analise')"><span id="tk-flbl-progress">Em análise</span> <span id="tk-cnt-progress">0</span></button>
+            <button class="tk-filter"        data-filter="fechado"    onclick="_setFilter('fechado')"><span id="tk-flbl-closed">Fechados</span> <span id="tk-cnt-closed">0</span></button>
+          </div>
+          <div id="tk-list" class="tk-list-body"></div>
+        </aside>
+
+        <!-- DETAIL PANE (right) -->
+        <section class="tk-detail-pane">
+          <div id="tk-empty-state" class="tk-empty">
+            <i class="ti ti-message-circle-2"></i>
+            <div class="tk-empty-title" id="tk-empty-title">Nenhum ticket selecionado</div>
+            <div class="tk-empty-sub" id="tk-empty-sub">Escolhe um ticket na lista para ver os detalhes.</div>
+          </div>
+          <div id="tk-detail" class="tk-detail" style="display:none;">
+            <div class="tk-detail-head">
+              <div class="tk-detail-av" id="tk-d-av">—</div>
+              <div class="tk-detail-info">
+                <div class="tk-d-title-row">
+                  <h2 id="tk-d-subject">—</h2>
+                  <span class="tk-source-pill" id="tk-d-source"></span>
+                  <span id="tk-d-cand-badge"></span>
+                </div>
+                <div class="tk-d-meta-line" id="tk-d-meta-line">—</div>
+              </div>
+              <button class="tk-btn-view-profile" id="tk-d-profile" onclick="openTicketUserProfile()">
+                <i class="ti ti-user"></i>
+                <span id="tk-d-profile-txt">Ver perfil</span>
+              </button>
+            </div>
+            <div class="tk-detail-strip">
+              <div><div class="lbl" id="tk-d-strip-status-lbl">Estado</div><div class="val" id="tk-d-status">—</div></div>
+              <div><div class="lbl" id="tk-d-strip-type-lbl">Tipo</div><div class="val" id="tk-d-type">—</div></div>
+              <div><div class="lbl" id="tk-d-strip-lang-lbl">Idioma</div><div class="val" id="tk-d-lang">—</div></div>
+              <div><div class="lbl" id="tk-d-strip-sub-lbl">Submetido</div><div class="val" id="tk-d-submitted">—</div></div>
+            </div>
+            <div class="tk-thread" id="tk-d-thread"></div>
+            <div class="tk-composer" id="tk-d-composer">
+              <textarea id="tk-d-reply" placeholder="Escreve a tua resposta..."></textarea>
+              <div class="tk-composer-actions">
+                <button class="tk-btn-ghost" id="tk-btn-template" onclick="void(0)" title="Em breve" disabled style="opacity:.5;cursor:not-allowed;">
+                  <span id="tk-btn-template-txt">Resposta padrão</span>
+                </button>
+                <div style="flex:1;"></div>
+                <button class="tk-btn-ghost danger" id="tk-btn-close-ticket" onclick="_openCloseTicketConfirm()">
+                  <span id="tk-btn-close-txt">Fechar ticket</span>
+                </button>
+                <button class="tk-btn-primary" id="tk-btn-send-reply" onclick="replyTicket()">
+                  <i class="ti ti-send"></i>
+                  <span id="tk-btn-send-txt">Enviar resposta</span>
+                </button>
+              </div>
+            </div>
+            <div class="tk-closed-msg" id="tk-d-closed-msg" style="display:none;">
+              <span id="tk-d-closed-txt">✓ Ticket fechado</span>
+            </div>
+          </div>
+        </section>
       </div>
-      <div id="tickets-body" style="margin-top:16px;"></div>
     </div>
 
   </main>
@@ -1136,6 +1202,421 @@
     background-size: cover;
     background-position: center;
   }
+
+/* ============================================================
+   TICKETS TAB v2 — split-view (list left, detail right). All
+   selectors scoped to #tab-tickets so other tabs are unaffected.
+   ============================================================ */
+#tab-tickets .tk-split {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 14px;
+  height: calc(100vh - 120px);
+  min-height: 520px;
+  margin-top: 12px;
+}
+#tab-tickets .tk-list-pane,
+#tab-tickets .tk-detail-pane {
+  background: #0e0e0e;
+  border: 1px solid #1e1e1e;
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* allow inner scroll */
+}
+
+/* ── List pane ── */
+#tab-tickets .tk-list-head {
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid #1e1e1e;
+  display: flex; align-items: center; justify-content: space-between;
+}
+#tab-tickets .tk-list-title {
+  font-family: var(--font-head, 'Syne', sans-serif);
+  font-size: 16px; font-weight: 700;
+  color: var(--paper, #f5f3ef);
+  display: flex; align-items: center; gap: 10px;
+}
+#tab-tickets .tk-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px; height: 20px; padding: 0 7px;
+  background: rgba(93,202,165,.14); color: #5DCAA5;
+  border: 1px solid rgba(93,202,165,.30);
+  border-radius: 100px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px; font-weight: 600;
+}
+#tab-tickets .tk-search-wrap {
+  padding: 12px 14px;
+  border-bottom: 1px solid #1e1e1e;
+  display: flex; align-items: center; gap: 8px;
+  background: #0d0d0d;
+}
+#tab-tickets .tk-search-wrap i { color: #555; font-size: 16px; }
+#tab-tickets .tk-search-wrap input {
+  flex: 1; background: transparent; border: none; outline: none;
+  color: #ddd; font-size: 13px; font-family: inherit;
+}
+#tab-tickets .tk-search-wrap input::placeholder { color: #555; }
+#tab-tickets .tk-filter-row {
+  padding: 10px 14px;
+  border-bottom: 1px solid #1e1e1e;
+  display: flex; gap: 6px;
+}
+#tab-tickets .tk-filter {
+  flex: 1;
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid #2a2a2a;
+  border-radius: 7px;
+  color: #888;
+  font-size: 11px; font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  transition: all .15s;
+}
+#tab-tickets .tk-filter:hover { color: #ddd; border-color: #444; }
+#tab-tickets .tk-filter.active { background: rgba(93,202,165,.10); color: #5DCAA5; border-color: rgba(93,202,165,.30); }
+#tab-tickets .tk-filter span {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; opacity: .8;
+}
+#tab-tickets .tk-list-body {
+  flex: 1; overflow-y: auto;
+  padding: 10px 8px 10px 8px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+#tab-tickets .tk-list-empty {
+  padding: 40px 20px;
+  text-align: center;
+  font-size: 12.5px; color: #555;
+}
+#tab-tickets .tk-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 10px;
+  align-items: start;
+  padding: 11px 12px;
+  background: #111;
+  border: 1px solid #1e1e1e;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color .12s, background .12s;
+}
+#tab-tickets .tk-card:hover { background: #141414; border-color: #2a2a2a; }
+#tab-tickets .tk-card.selected { background: rgba(93,202,165,.06); border-color: rgba(93,202,165,.35); }
+#tab-tickets .tk-card.closed { opacity: .55; }
+#tab-tickets .tk-card.unread::before {
+  content: ''; position: absolute; top: 14px; left: 4px;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #5DCAA5;
+}
+#tab-tickets .tk-card-av {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: #1a1a1a;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-head, 'Syne', sans-serif);
+  font-size: 11px; font-weight: 700;
+  color: #ddd;
+}
+#tab-tickets .tk-card-body { min-width: 0; }
+#tab-tickets .tk-card-row1 {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12.5px; color: #e8e8e8; font-weight: 600;
+  margin-bottom: 2px;
+}
+#tab-tickets .tk-card-name {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+#tab-tickets .tk-card-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px; color: #555;
+  flex-shrink: 0;
+}
+#tab-tickets .tk-card-email {
+  font-size: 11px; color: #666;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  margin-bottom: 4px;
+}
+#tab-tickets .tk-card-subject {
+  font-size: 12px; color: #c0c0c0;
+  overflow: hidden; text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.45;
+  margin-bottom: 6px;
+}
+#tab-tickets .tk-card-foot {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+#tab-tickets .tk-status-pill {
+  font-size: 9.5px; font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 100px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+#tab-tickets .tk-status-pill.novo       { background: rgba(226,107,107,.12); color: #e26b6b; border: 1px solid rgba(226,107,107,.25); }
+#tab-tickets .tk-status-pill.em_analise { background: rgba(239,184,74,.12);  color: #efb84a; border: 1px solid rgba(239,184,74,.25); }
+#tab-tickets .tk-status-pill.fechado    { background: rgba(93,202,165,.10);  color: #5DCAA5; border: 1px solid rgba(93,202,165,.25); }
+#tab-tickets .tk-source-pill {
+  font-size: 9.5px; font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 100px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+#tab-tickets .tk-source-pill.recruiter,
+#modal-user-profile .tk-source-pill.recruiter { background: rgba(178,100,224,.12); color: #b264e0; border: 1px solid rgba(178,100,224,.30); }
+#tab-tickets .tk-source-pill.candidato,
+#modal-user-profile .tk-source-pill.candidato { background: rgba(100,181,246,.12); color: #64b5f6; border: 1px solid rgba(100,181,246,.30); }
+#tab-tickets .tk-cand-badge,
+#modal-user-profile .tk-cand-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: rgba(239,184,74,.12);
+  color: #efb84a;
+  border: 1px solid rgba(239,184,74,.30);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 10px; font-weight: 600; white-space: nowrap;
+}
+#tab-tickets .tk-card-del {
+  position: absolute; top: 8px; right: 8px;
+  background: none; border: none;
+  color: #333; cursor: pointer;
+  font-size: 16px; line-height: 1;
+  padding: 2px 6px;
+  opacity: 0;
+  transition: opacity .15s, color .15s;
+}
+#tab-tickets .tk-card:hover .tk-card-del { opacity: 1; }
+#tab-tickets .tk-card-del:hover { color: #e26b6b; }
+
+/* ── Detail pane ── */
+#tab-tickets .tk-empty {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px;
+  color: #555;
+  text-align: center;
+  padding: 40px 20px;
+}
+#tab-tickets .tk-empty i { font-size: 38px; color: #2a2a2a; }
+#tab-tickets .tk-empty .tk-empty-title { font-size: 14px; color: #888; font-weight: 600; }
+#tab-tickets .tk-empty .tk-empty-sub   { font-size: 12.5px; color: #555; max-width: 280px; line-height: 1.55; }
+#tab-tickets .tk-detail {
+  flex: 1;
+  display: flex; flex-direction: column;
+  min-height: 0;
+}
+#tab-tickets .tk-detail-head {
+  padding: 18px 22px;
+  border-bottom: 1px solid #1e1e1e;
+  display: flex; align-items: flex-start; gap: 14px;
+}
+#tab-tickets .tk-detail-av {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: #1a1a1a;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-head, 'Syne', sans-serif);
+  font-size: 15px; font-weight: 700;
+  color: #ddd; flex-shrink: 0;
+}
+#tab-tickets .tk-detail-info { flex: 1; min-width: 0; }
+#tab-tickets .tk-d-title-row {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+#tab-tickets .tk-detail-info h2 {
+  font-family: var(--font-head, 'Syne', sans-serif);
+  font-size: 17px; font-weight: 700;
+  color: var(--paper, #f5f3ef);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+#tab-tickets .tk-d-meta-line {
+  font-size: 11.5px; color: #777;
+  font-family: 'JetBrains Mono', monospace;
+}
+#tab-tickets .tk-btn-view-profile {
+  background: rgba(93,202,165,.10);
+  border: 1px solid rgba(93,202,165,.30);
+  color: #5DCAA5;
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 11.5px; font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+#tab-tickets .tk-btn-view-profile:hover { background: rgba(93,202,165,.18); }
+
+#tab-tickets .tk-detail-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1px solid #1e1e1e;
+  background: #0a0a0a;
+}
+#tab-tickets .tk-detail-strip > div {
+  padding: 12px 16px;
+  border-left: 1px solid #1e1e1e;
+}
+#tab-tickets .tk-detail-strip > div:first-child { border-left: none; }
+#tab-tickets .tk-detail-strip .lbl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px; color: #444;
+  text-transform: uppercase; letter-spacing: .12em;
+  margin-bottom: 4px;
+}
+#tab-tickets .tk-detail-strip .val {
+  font-size: 13px; color: #ddd; font-weight: 500;
+}
+
+#tab-tickets .tk-thread {
+  flex: 1; overflow-y: auto;
+  padding: 18px 22px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+#tab-tickets .tk-bubble {
+  max-width: 78%;
+  padding: 11px 15px;
+  border-radius: 12px;
+  font-size: 13px; line-height: 1.65;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+#tab-tickets .tk-bubble-meta {
+  font-size: 10.5px; font-weight: 500;
+  margin-bottom: 5px;
+  font-family: 'JetBrains Mono', monospace;
+}
+#tab-tickets .tk-bubble.user {
+  background: #181818;
+  border: 1px solid #262626;
+  color: #e6e6e6;
+  align-self: flex-start;
+  border-bottom-left-radius: 2px;
+}
+#tab-tickets .tk-bubble.user .tk-bubble-meta { color: #888; }
+#tab-tickets .tk-bubble.admin {
+  background: rgba(93,202,165,.10);
+  border: 1px solid rgba(93,202,165,.28);
+  color: #e6e6e6;
+  align-self: flex-end;
+  border-bottom-right-radius: 2px;
+}
+#tab-tickets .tk-bubble.admin .tk-bubble-meta { color: #5DCAA5; }
+
+#tab-tickets .tk-composer {
+  padding: 14px 18px;
+  border-top: 1px solid #1e1e1e;
+  background: #0a0a0a;
+  display: flex; flex-direction: column; gap: 10px;
+}
+#tab-tickets .tk-composer textarea {
+  width: 100%;
+  min-height: 90px;
+  max-height: 200px;
+  background: #0d0d0d;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 11px 13px;
+  font-size: 13px;
+  color: #ddd;
+  outline: none;
+  resize: vertical;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+#tab-tickets .tk-composer textarea:focus { border-color: rgba(93,202,165,.45); }
+#tab-tickets .tk-composer-actions {
+  display: flex; gap: 8px; align-items: center;
+}
+#tab-tickets .tk-btn-ghost {
+  background: none;
+  border: 1px solid #2a2a2a;
+  color: #aaa;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+#tab-tickets .tk-btn-ghost:hover { background: #1a1a1a; color: #ddd; border-color: #3a3a3a; }
+#tab-tickets .tk-btn-ghost.danger {
+  border-color: rgba(226,107,107,.25);
+  color: #e26b6b;
+}
+#tab-tickets .tk-btn-ghost.danger:hover { background: rgba(226,107,107,.08); }
+#tab-tickets .tk-btn-primary {
+  background: #5DCAA5;
+  border: none;
+  color: #0a0a0a;
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-size: 12.5px; font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+#tab-tickets .tk-btn-primary:hover { background: #79d9b7; }
+#tab-tickets .tk-closed-msg {
+  padding: 16px;
+  text-align: center;
+  font-size: 12.5px; color: #5DCAA5;
+  background: rgba(93,202,165,.06);
+  border-top: 1px solid #1e1e1e;
+}
+
+/* ── Modal: Ver perfil do utilizador (separate from #modal-profile) ── */
+#modal-user-profile .modal { max-width: 460px; width: 92vw; }
+#modal-user-profile .profile-up-wrap {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 0 18px;
+  border-bottom: 1px solid #1e1e1e;
+  margin-bottom: 18px;
+}
+#modal-user-profile .profile-up-av {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: #1a1a1a; color: #ddd;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-head, 'Syne', sans-serif);
+  font-size: 16px; font-weight: 700;
+  flex-shrink: 0;
+}
+#modal-user-profile .profile-up-name {
+  flex: 1; font-size: 15px; color: var(--paper, #f5f3ef); font-weight: 600;
+}
+#modal-user-profile .profile-up-fields {
+  display: flex; flex-direction: column; gap: 12px;
+  margin-bottom: 18px;
+}
+#modal-user-profile .profile-up-fields > div {
+  display: flex; flex-direction: column; gap: 4px;
+}
+#modal-user-profile .profile-up-fields .lbl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px; color: #555;
+  text-transform: uppercase; letter-spacing: .12em;
+}
+#modal-user-profile .profile-up-fields .val {
+  font-size: 13px; color: #ddd; word-break: break-word;
+}
+
+/* ── Modal: confirmar fechar ticket ── */
+#modal-close-ticket-confirm .modal { max-width: 420px; width: 92vw; }
+
+@media (max-width: 900px) {
+  #tab-tickets .tk-split { grid-template-columns: 1fr; height: auto; }
+  #tab-tickets .tk-detail-strip { grid-template-columns: repeat(2, 1fr); }
+  #tab-tickets .tk-detail-strip > div:nth-child(odd) { border-left: none; }
+}
 </style>
 
 <div id="marketing-area" class="app-shell" style="display:none;">
@@ -1521,22 +2002,46 @@
   </div>
 </div>
 
-<!-- MODAL: TICKET DETAIL -->
-<div class="modal-bg" id="modal-ticket" onclick="void(0)">
-  <div class="modal" style="max-width:760px;width:92vw;" onclick="event.stopPropagation()">
+<!-- MODAL: USER PROFILE (ticket sender) — separate from the admin's
+     own #modal-profile. Shown from the "Ver perfil" button in the
+     tickets split-view header. -->
+<div class="modal-bg" id="modal-user-profile" onclick="if(event.target===this) closeModal('modal-user-profile')">
+  <div class="modal">
     <div class="modal-header">
-      <div class="modal-title" id="ticket-modal-title">Ticket de Suporte</div>
-      <button class="modal-close" onclick="closeModal('modal-ticket')">×</button>
+      <div class="modal-title" id="up-title">Perfil do utilizador</div>
+      <button class="modal-close" onclick="closeModal('modal-user-profile')">×</button>
     </div>
-    <div id="ticket-modal-body"></div>
-    <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid #1e1e1e;">
-      <textarea id="ticket-reply-text" placeholder="Escreve a tua resposta ao candidato..." style="width:100%;background:#0d0d0d;border:1px solid #2a2a2a;border-radius:8px;color:#ddd;font-size:13px;padding:12px;min-height:80px;resize:vertical;font-family:inherit;box-sizing:border-box;"></textarea>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;" class="modal-footer">
-        <button onclick="replyTicket()" style="flex:2;min-width:120px;padding:11px;background:var(--accent);border:none;border-radius:8px;color:#0e0e0e;font-size:13px;font-weight:700;cursor:pointer;">✓ Responder</button>
-        <button onclick="resendInviteTicket()" id="btn-resend-invite" style="flex:1;padding:11px;background:rgba(239,184,74,.1);border:1px solid rgba(239,184,74,.3);border-radius:8px;color:#efb84a;font-size:13px;cursor:pointer;">📧 Reenviar convite</button>
-        <button onclick="closeRecruiterTicket()" id="btn-close-recruiter-ticket" style="display:none;flex:1;padding:11px;background:rgba(93,202,165,.1);border:1px solid rgba(93,202,165,.3);border-radius:8px;color:#5DCAA5;font-size:13px;cursor:pointer;">✓ Fechar ticket</button>
-        <button onclick="closeModal('modal-ticket')" style="padding:11px 16px;background:none;border:1px solid #2a2a2a;border-radius:8px;color:#888;font-size:13px;cursor:pointer;">Cancelar</button>
+    <div class="profile-up-wrap">
+      <div class="profile-up-av" id="up-av">—</div>
+      <div style="flex:1;min-width:0;">
+        <div class="profile-up-name" id="up-name">—</div>
+        <span class="tk-source-pill" id="up-source" style="margin-top:4px;display:inline-block;">—</span>
       </div>
+    </div>
+    <div class="profile-up-fields">
+      <div><div class="lbl" id="up-email-lbl">Email</div><div class="val" id="up-email">—</div></div>
+      <div id="up-company-row"><div class="lbl" id="up-company-lbl">Empresa</div><div class="val" id="up-company">—</div></div>
+      <div id="up-job-row" style="display:none;"><div class="lbl" id="up-job-lbl">Vaga</div><div class="val" id="up-job">—</div></div>
+      <div id="up-status-row" style="display:none;"><div class="lbl" id="up-status-lbl">Estado</div><div class="val" id="up-status">—</div></div>
+    </div>
+    <button class="btn-primary" id="up-close-btn" onclick="closeModal('modal-user-profile')" style="width:100%;">Fechar</button>
+  </div>
+</div>
+
+<!-- MODAL: confirm close ticket -->
+<div class="modal-bg" id="modal-close-ticket-confirm" onclick="if(event.target===this) closeModal('modal-close-ticket-confirm')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="close-tkt-title" style="color:#5DCAA5;">Fechar ticket</div>
+      <button class="modal-close" onclick="closeModal('modal-close-ticket-confirm')">×</button>
+    </div>
+    <div style="margin-bottom:18px;">
+      <div id="close-tkt-confirm-title" style="font-size:13.5px;color:#ddd;line-height:1.65;margin-bottom:8px;">Tens a certeza que pretendes fechar este ticket?</div>
+      <div id="close-tkt-confirm-body" style="font-size:12.5px;color:#777;line-height:1.55;">O ticket vai passar para o estado 'Fechado' e o utilizador deixa de poder responder.</div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="closeModal('modal-close-ticket-confirm')" id="close-tkt-cancel-btn" style="flex:1;padding:11px;background:none;border:1px solid #2a2a2a;border-radius:8px;color:#888;font-size:13px;cursor:pointer;font-family:inherit;">Cancelar</button>
+      <button onclick="_doCloseTicket()" id="close-tkt-confirm-btn" style="flex:1;padding:11px;background:#5DCAA5;border:none;border-radius:8px;color:#0a0a0a;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Sim, fechar ticket</button>
     </div>
   </div>
 </div>
@@ -2318,208 +2823,397 @@ async function loadTicketsBadge() {
   } catch(e) {}
 }
 
+// ═══════════════════════════════════════════════════════════════
+// TICKETS TAB v2 — split-view (list left, detail right).
+// Reuses the existing reply/close/delete handlers + ticket_messages
+// thread parsing; only the surface UI changed.
+// ═══════════════════════════════════════════════════════════════
+
+// Module state shared across the split-view render path.
+let _allTickets        = [];
+let _candStatusByEmail = new Map();
+let _ticketFilter      = 'all';            // 'all' | 'em_analise' | 'fechado'
+let _ticketSearch      = '';
+let _selectedTicketId  = null;
+
+// i18n helpers — admin uses `documentElement.lang` per render.
+function _tkIsEN() { return (document.documentElement.lang || 'pt') === 'en'; }
+
+// Status / source / type display dictionaries — used by list + detail.
+function _tkStatusLabel(s, isEN) {
+  if(s === 'novo')       return isEN ? 'New'         : 'Novo';
+  if(s === 'em_analise') return isEN ? 'In progress' : 'Em análise';
+  if(s === 'fechado')    return isEN ? 'Closed'      : 'Fechado';
+  return s || '—';
+}
+function _tkSourceLabel(src, isEN) {
+  if(src === 'recruiter') return isEN ? 'Recruiter' : 'Recruiter';
+  return isEN ? 'Candidate' : 'Candidato';
+}
+function _tkTypeLabel(t, isEN) {
+  if(t.source === 'recruiter') return isEN ? 'Recruiter ticket' : 'Ticket de recruiter';
+  if(t.tipo === 'formulario')  return isEN ? 'Form issue'        : 'Problema no formulário';
+  if(t.tipo === 'dashboard')   return isEN ? 'Dashboard issue'   : 'Problema no dashboard';
+  return t.tipo || '—';
+}
+function _tkRelTime(iso, isEN) {
+  if(!iso) return '';
+  const then = new Date(iso); if(isNaN(then.getTime())) return '';
+  const ms = Math.max(0, Date.now() - then.getTime());
+  const min = Math.floor(ms / 60000);
+  if(min < 1)  return isEN ? 'just now' : 'agora';
+  if(min < 60) return isEN ? `${min}min ago` : `há ${min}min`;
+  const hr = Math.floor(min / 60);
+  if(hr < 24) return isEN ? `${hr}h ago` : `há ${hr}h`;
+  const day = Math.floor(hr / 24);
+  if(day < 7) return isEN ? `${day} day${day>1?'s':''} ago` : `há ${day} dia${day>1?'s':''}`;
+  return new Date(iso).toLocaleDateString(isEN ? 'en-GB' : 'pt-PT', { day:'2-digit', month:'short' });
+}
+function _tkFmtTime(iso, isEN) {
+  if(!iso) return '';
+  const d = new Date(iso); if(isNaN(d.getTime())) return '';
+  return d.toLocaleString(isEN ? 'en-GB' : 'pt-PT', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+}
+function _tkEscape(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function _tkBadgeHTML(t, isEN) {
+  if(t.source === 'recruiter') return '';
+  const email = (t.email || '').trim().toLowerCase();
+  if(!email) return '';
+  if(!_candStatusByEmail.has(email)) {
+    return `<span class="tk-cand-badge" title="${isEN?'This candidate was deleted from the database':'Este candidato foi apagado da base de dados'}"><i class="ti ti-alert-triangle"></i>${isEN?'Candidate deleted':'Candidato apagado'}</span>`;
+  }
+  if(_candStatusByEmail.get(email) === 'Rejeitado') {
+    return `<span class="tk-cand-badge" title="${isEN?'This candidate was rejected':'Este candidato foi rejeitado'}"><i class="ti ti-alert-triangle"></i>${isEN?'Candidate rejected':'Candidato rejeitado'}</span>`;
+  }
+  return '';
+}
+
 async function renderTickets() {
-  const body = document.getElementById('tickets-body');
-  body.innerHTML = '<div class="empty">A carregar...</div>';
+  const isEN = _tkIsEN();
+  // Localise page chrome.
+  const _set = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
+  _set('tk-list-title-text',     isEN ? 'Tickets'      : 'Tickets');
+  _set('tk-flbl-all',            isEN ? 'All'          : 'Todos');
+  _set('tk-flbl-progress',       isEN ? 'In progress'  : 'Em análise');
+  _set('tk-flbl-closed',         isEN ? 'Closed'       : 'Fechados');
+  _set('tk-empty-title',         isEN ? 'No ticket selected' : 'Nenhum ticket selecionado');
+  _set('tk-empty-sub',           isEN ? 'Pick a ticket from the list to see details.' : 'Escolhe um ticket na lista para ver os detalhes.');
+  _set('tk-d-profile-txt',       isEN ? 'View profile' : 'Ver perfil');
+  _set('tk-btn-template-txt',    isEN ? 'Quick reply'  : 'Resposta padrão');
+  _set('tk-btn-close-txt',       isEN ? 'Close ticket' : 'Fechar ticket');
+  _set('tk-btn-send-txt',        isEN ? 'Send reply'   : 'Enviar resposta');
+  _set('tk-d-strip-status-lbl',  isEN ? 'Status'       : 'Estado');
+  _set('tk-d-strip-type-lbl',    isEN ? 'Type'         : 'Tipo');
+  _set('tk-d-strip-lang-lbl',    isEN ? 'Language'     : 'Idioma');
+  _set('tk-d-strip-sub-lbl',     isEN ? 'Submitted'    : 'Submetido');
+  const searchEl = document.getElementById('tk-search');
+  if(searchEl) searchEl.placeholder = isEN ? 'Search...' : 'Pesquisar...';
+  const replyEl = document.getElementById('tk-d-reply');
+  if(replyEl) replyEl.placeholder = isEN ? 'Write your reply...' : 'Escreve a tua resposta...';
+
   try {
     const { data: tickets } = await supa.from('tickets').select('*').order('created_at', { ascending: false });
+    _allTickets = tickets || [];
 
-    if(!tickets?.length) {
-      body.innerHTML = `
-        <div class="table-head" style="grid-template-columns:2fr 2fr 1fr 1fr 1fr;"><div>Utilizador</div><div>Assunto</div><div>Tipo</div><div>Estado</div><div>Data</div></div>
-        <div class="empty" style="margin-top:24px;">Sem tickets de suporte de momento.</div>`;
-      return;
-    }
-
-    const statusColor = { novo: '#e26b6b', em_analise: '#efb84a', fechado: '#5DCAA5' };
-    const statusLabel = { novo: 'Novo', em_analise: 'Em análise', fechado: 'Fechado' };
-    const tipoBadge   = { formulario: '⚠ Formulário', dashboard: '💬 Dashboard' };
-    const sourceBadge  = { recruiter: '🏢 Recruiter', candidato: '👤 Candidato', undefined: '' };
-    const isEN = (document.documentElement.lang || 'pt') === 'en';
-
-    // Cross-reference candidate-source tickets against the candidates
-    // table so we can flag rejected / deleted accounts. Single bulk
-    // query — independent of ticket count. Recruiter tickets skip the
-    // check (no candidates row by design).
+    // Bulk fetch candidate statuses for candidate-source tickets.
     const candidateEmails = [...new Set(
-      tickets
+      _allTickets
         .filter(t => t.source !== 'recruiter')
         .map(t => (t.email || '').trim().toLowerCase())
         .filter(Boolean)
     )];
-    const candStatusByEmail = new Map();
+    _candStatusByEmail = new Map();
     if(candidateEmails.length > 0) {
       try {
         const { data: cands } = await supa.from('candidates')
           .select('email,status').in('email', candidateEmails);
         (cands || []).forEach(c => {
-          candStatusByEmail.set((c.email || '').trim().toLowerCase(), c.status || null);
+          _candStatusByEmail.set((c.email || '').trim().toLowerCase(), c.status || null);
         });
       } catch(e) { console.warn('[renderTickets] candidate status lookup:', e); }
     }
 
-    // Warn-coloured pill rendered inline next to the ticket owner's
-    // name. Three states: active candidate (no badge), rejected,
-    // deleted. Falls conservative — if the lookup map doesn't contain
-    // the email, treat it as deleted; same payload looks the same to
-    // the admin so no UX loss.
-    const _badgeStyle = 'display:inline-flex;align-items:center;gap:4px;background:rgba(239,184,74,.12);color:#efb84a;border:1px solid rgba(239,184,74,.3);border-radius:4px;padding:1px 6px;font-size:10px;font-weight:600;white-space:nowrap;';
-    const _candBadge = (t) => {
-      if(t.source === 'recruiter') return '';
-      const email = (t.email || '').trim().toLowerCase();
-      if(!email) return '';
-      if(!candStatusByEmail.has(email)) {
-        return `<span style="${_badgeStyle}" title="${isEN?'This candidate was deleted from the database':'Este candidato foi apagado da base de dados'}"><i class="ti ti-alert-triangle"></i>${isEN?'Candidate deleted':'Candidato apagado'}</span>`;
-      }
-      if(candStatusByEmail.get(email) === 'Rejeitado') {
-        return `<span style="${_badgeStyle}" title="${isEN?'This candidate was rejected':'Este candidato foi rejeitado'}"><i class="ti ti-alert-triangle"></i>${isEN?'Candidate rejected':'Candidato rejeitado'}</span>`;
-      }
-      return '';
-    };
+    // Counts per filter
+    const cntAll = _allTickets.length;
+    const cntProgress = _allTickets.filter(t => t.status === 'em_analise' || t.status === 'novo').length;
+    const cntClosed = _allTickets.filter(t => t.status === 'fechado').length;
+    _set('tk-cnt-all', String(cntAll));
+    _set('tk-cnt-progress', String(cntProgress));
+    _set('tk-cnt-closed', String(cntClosed));
+    _set('tk-list-count', String(cntAll));
 
-    body.innerHTML = `
-      <div class="table-head" style="grid-template-columns:2fr 2fr 1fr 1fr 1fr;"><div>Utilizador</div><div>Assunto</div><div>Tipo</div><div>Estado</div><div>Data</div></div>
-      ${tickets.map(t => `
-        <div class="table-row" style="grid-template-columns:2fr 2fr 1fr 1fr 1fr;cursor:pointer;border:1px solid ${t.status==='novo'?'rgba(226,107,107,.25)':'#1e1e1e'};border-radius:10px;margin-bottom:6px;padding:10px 14px;background:#111;transition:border-color .15s;"
-          onclick="openTicket('${t.id}')"
-          onmouseover="this.style.borderColor='#333'" onmouseout="this.style.borderColor='${t.status==='novo'?'rgba(226,107,107,.25)':'#1e1e1e'}'">
-          <div class="company-info">
-            <div class="company-avatar" style="width:28px;height:28px;font-size:11px;">${initials(t.name||t.email)}</div>
-            <div style="min-width:0;">
-              <div style="font-size:13px;color:#ddd;font-weight:500;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-                <span>${t.name||'—'}</span>
-                ${_candBadge(t)}
-              </div>
-              <div style="font-size:11px;color:#555;">${t.email}</div>
-            </div>
-          </div>
-          <div style="font-size:12px;color:#ddd;align-self:center;">${t.assunto}</div>
-          <div style="align-self:center;font-size:11px;color:#888;">
-            ${t.source==='recruiter' ? '<span style="background:rgba(93,202,165,.12);color:#5DCAA5;border:1px solid rgba(93,202,165,.2);border-radius:4px;padding:1px 6px;font-size:10px;font-weight:600;">🏢 Recruiter</span>' : (tipoBadge[t.tipo]||t.tipo)}
-          </div>
-          <div style="align-self:center;"><span class="status-pill" style="background:rgba(${t.status==='novo'?'226,107,107':t.status==='em_analise'?'239,184,74':'93,202,165'},.12);color:${statusColor[t.status]||'#888'};border:1px solid ${statusColor[t.status]||'#888'}33;">${statusLabel[t.status]||t.status}</span></div>
-          <div style="font-size:11px;color:#555;align-self:center;display:flex;align-items:center;gap:8px;">
-            ${new Date(t.created_at).toLocaleDateString('pt-PT')}
-            <button onclick="event.stopPropagation();deleteTicketById('${t.id}','${(t.name||t.email).replace(/'/g,'')}')" style="background:none;border:none;color:#444;font-size:20px;cursor:pointer;padding:0 0 0 16px;line-height:1;font-weight:300;" title="Apagar ticket" onmouseover="this.style.color='#e26b6b'" onmouseout="this.style.color='#444'">×</button>
-          </div>
-        </div>`).join('')}`;
+    _renderTicketList();
+
+    // If the previously selected ticket is still in the list, refresh
+    // its detail; otherwise clear selection back to the empty state.
+    if(_selectedTicketId && _allTickets.some(t => t.id === _selectedTicketId)) {
+      await _selectTicket(_selectedTicketId, /*silent*/ true);
+    } else {
+      _selectedTicketId = null;
+      document.getElementById('tk-detail').style.display = 'none';
+      document.getElementById('tk-empty-state').style.display = 'flex';
+    }
   } catch(e) {
-    body.innerHTML = '<div class="empty">Erro ao carregar tickets.</div>';
+    console.warn('[renderTickets]', e);
+    const listEl = document.getElementById('tk-list');
+    if(listEl) listEl.innerHTML = `<div class="tk-list-empty">${_tkIsEN()?'Error loading tickets.':'Erro ao carregar tickets.'}</div>`;
   }
 }
 
-async function openTicket(id) {
-  const { data: tickets } = await supa.from('tickets').select('*').eq('id', id).single();
-  _currentTicket = tickets;
-  if(!tickets) return;
+function _renderTicketList() {
+  const isEN = _tkIsEN();
+  const listEl = document.getElementById('tk-list');
+  if(!listEl) return;
+  const q = (_ticketSearch || '').toLowerCase();
+  const filtered = _allTickets.filter(t => {
+    // Filter pill
+    if(_ticketFilter === 'em_analise') {
+      if(t.status !== 'em_analise' && t.status !== 'novo') return false;
+    } else if(_ticketFilter === 'fechado') {
+      if(t.status !== 'fechado') return false;
+    }
+    // Search
+    if(q) {
+      const hay = ((t.name||'') + ' ' + (t.email||'') + ' ' + (t.assunto||'') + ' ' + (t.descricao||'')).toLowerCase();
+      if(hay.indexOf(q) === -1) return false;
+    }
+    return true;
+  });
+  if(filtered.length === 0) {
+    listEl.innerHTML = `<div class="tk-list-empty">${isEN?'No tickets match your filter.':'Nenhum ticket corresponde ao filtro.'}</div>`;
+    return;
+  }
+  listEl.innerHTML = filtered.map(t => {
+    const isRecruiter = t.source === 'recruiter';
+    const isSelected = t.id === _selectedTicketId;
+    const isUnread = t.status === 'novo';
+    const isClosed = t.status === 'fechado';
+    const cls = ['tk-card', isSelected ? 'selected' : '', isUnread ? 'unread' : '', isClosed ? 'closed' : ''].filter(Boolean).join(' ');
+    const escName = _tkEscape(t.name || '—');
+    const escEmail = _tkEscape(t.email || '');
+    const escSubject = _tkEscape(t.assunto || '');
+    const escId = _tkEscape(t.id);
+    const escDelLabel = _tkEscape((t.name || t.email || '').replace(/'/g,''));
+    const sourcePill = `<span class="tk-source-pill ${isRecruiter?'recruiter':'candidato'}">${_tkSourceLabel(t.source, isEN)}</span>`;
+    return `
+      <div class="${cls}" onclick="_selectTicket('${escId}')">
+        <div class="tk-card-av">${_tkEscape(initials(t.name || t.email))}</div>
+        <div class="tk-card-body">
+          <div class="tk-card-row1">
+            <span class="tk-card-name">${escName}</span>
+            <span class="tk-card-time">${_tkEscape(_tkRelTime(t.created_at, isEN))}</span>
+          </div>
+          <div class="tk-card-email">${escEmail}</div>
+          <div class="tk-card-subject">${escSubject}</div>
+          <div class="tk-card-foot">
+            <span class="tk-status-pill ${t.status||''}">${_tkStatusLabel(t.status, isEN)}</span>
+            ${sourcePill}
+            ${_tkBadgeHTML(t, isEN)}
+          </div>
+        </div>
+        <button class="tk-card-del" onclick="event.stopPropagation();deleteTicketById('${escId}','${escDelLabel}')" title="${isEN?'Delete ticket':'Apagar ticket'}">×</button>
+      </div>`;
+  }).join('');
+}
 
-  // Mark as em_analise if novo
-  if(tickets.status === 'novo') {
+function _setFilter(name) {
+  _ticketFilter = name;
+  document.querySelectorAll('#tab-tickets .tk-filter').forEach(b => {
+    b.classList.toggle('active', b.dataset.filter === name);
+  });
+  _renderTicketList();
+}
+function _filterTickets() {
+  _ticketSearch = (document.getElementById('tk-search')?.value || '').trim();
+  _renderTicketList();
+}
+
+async function _selectTicket(id, silent) {
+  const isEN = _tkIsEN();
+  // Fetch fresh — reuses original RLS path; tickets table is admin-readable.
+  const { data: t } = await supa.from('tickets').select('*').eq('id', id).single();
+  if(!t) return;
+  _currentTicket = t;
+  _selectedTicketId = id;
+
+  // Mark as em_analise if novo (mirrors legacy openTicket behaviour).
+  if(t.status === 'novo') {
     await supa.from('tickets').update({ status: 'em_analise', updated_at: new Date().toISOString() }).eq('id', id);
+    t.status = 'em_analise';
     _currentTicket.status = 'em_analise';
     loadTicketsBadge();
+    const cached = _allTickets.find(x => x.id === id); if(cached) cached.status = 'em_analise';
   }
 
-  const isRecruiter = tickets.source === 'recruiter';
-  const isFormulario = tickets.tipo === 'formulario';
+  // Header
+  const isRecruiter = t.source === 'recruiter';
+  const subjectEl = document.getElementById('tk-d-subject');
+  if(subjectEl) subjectEl.textContent = t.assunto || '—';
+  const avEl = document.getElementById('tk-d-av');
+  if(avEl) avEl.textContent = initials(t.name || t.email);
+  const srcEl = document.getElementById('tk-d-source');
+  if(srcEl) {
+    srcEl.className = 'tk-source-pill ' + (isRecruiter ? 'recruiter' : 'candidato');
+    srcEl.textContent = _tkSourceLabel(t.source, isEN);
+  }
+  const badgeEl = document.getElementById('tk-d-cand-badge');
+  if(badgeEl) badgeEl.innerHTML = _tkBadgeHTML(t, isEN);
+  const shortId = '#' + String(t.id || '').slice(0, 8);
+  const metaParts = [shortId, t.name || '—', t.company || '—', _tkRelTime(t.created_at, isEN)].filter(Boolean);
+  const metaEl = document.getElementById('tk-d-meta-line');
+  if(metaEl) metaEl.textContent = metaParts.join(' · ');
 
-  document.getElementById('ticket-modal-title').textContent = `Ticket — ${tickets.name || tickets.email}${isRecruiter ? ' 🏢' : ''}`;
-  document.getElementById('btn-resend-invite').style.display = (!isRecruiter && isFormulario) ? 'block' : 'none';
-  document.getElementById('ticket-reply-text').placeholder = tickets.lang === 'en'
-    ? (isRecruiter ? 'Write your reply to the recruiter...' : 'Write your reply to the candidate...')
-    : (isRecruiter ? 'Escreve a tua resposta ao recruiter...' : 'Escreve a tua resposta ao candidato...');
+  // Strip
+  document.getElementById('tk-d-status').textContent    = _tkStatusLabel(t.status, isEN);
+  document.getElementById('tk-d-type').textContent      = _tkTypeLabel(t, isEN);
+  document.getElementById('tk-d-lang').textContent      = t.lang === 'en' ? '🇬🇧 English' : '🇵🇹 Português';
+  document.getElementById('tk-d-submitted').textContent = _tkFmtTime(t.created_at, isEN);
 
-  // For recruiters: build the full conversation history.
-  // Source of truth: tickets.resposta JSON log (always readable). We also pull ticket_messages
-  // and merge by content so older tickets that pre-date the JSON log still display correctly.
-  let conversationHtml = '';
+  // Thread — same logic as legacy openTicket. Recruiter tickets pull
+  // ticket_messages + parse the JSON conversation log; candidate tickets
+  // show the description + the single resposta (if any).
+  const threadEl = document.getElementById('tk-d-thread');
+  const fmtDate = d => _tkFmtTime(d, isEN);
   if(isRecruiter) {
+    let html = '';
     try {
       const { data: msgs } = await supa.from('ticket_messages')
         .select('*').eq('ticket_id', id).order('created_at', { ascending: true });
       const messages = msgs || [];
-
-      const fmtDate = d => d ? new Date(d).toLocaleString(tickets.lang==='en'?'en-GB':'pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
-      const bubble = (who, when, body) => `
-        <div style="display:flex;flex-direction:column;align-items:${who==='admin'?'flex-end':'flex-start'};">
-          <div style="max-width:82%;background:${who==='admin'?'rgba(93,202,165,.10)':'#1a1a1a'};border:1px solid ${who==='admin'?'rgba(93,202,165,.25)':'#2a2a2a'};border-radius:12px;padding:11px 15px;">
-            <div style="font-size:11px;color:${who==='admin'?'#5DCAA5':'#999'};margin-bottom:4px;font-weight:500;">${who==='admin'?'RHC Admin':(tickets.name||'Recruiter')} · ${when}</div>
-            <div style="font-size:13px;color:#e6e6e6;line-height:1.65;white-space:pre-wrap;word-break:break-word;">${body}</div>
-          </div>
-        </div>`;
-
-      // Merge: start with tickets.resposta JSON log if it has any entries, else fall back
-      // to ticket_messages + original description.
-      const log = parseConversation(tickets.resposta);
+      const log = parseConversation(t.resposta);
       let entries;
       if(log.length) {
         entries = log;
-        // Ensure original description is the very first entry if not already present
-        const desc = (tickets.descricao || '').trim();
+        const desc = (t.descricao || '').trim();
         if(desc && !(log[0] && log[0].s === 'recruiter' && (log[0].b || '').trim() === desc)) {
-          entries = [{ s: 'recruiter', t: tickets.created_at, b: desc }, ...log];
+          entries = [{ s: 'recruiter', t: t.created_at, b: desc }, ...log];
         }
       } else {
         entries = [];
-        const desc = (tickets.descricao || '').trim();
+        const desc = (t.descricao || '').trim();
         const firstMsgBody = messages.length ? (messages[0].body || '').trim() : '';
-        if(desc && desc !== firstMsgBody) entries.push({ s: 'recruiter', t: tickets.created_at, b: desc });
+        if(desc && desc !== firstMsgBody) entries.push({ s: 'recruiter', t: t.created_at, b: desc });
         messages.forEach(m => entries.push({ s: m.sender, t: m.created_at, b: m.body }));
       }
-
-      const bubbles = entries.map(e => bubble(e.s, fmtDate(e.t), e.b)).join('');
-      conversationHtml = `<div style="display:flex;flex-direction:column;gap:10px;max-height:340px;overflow-y:auto;padding-right:4px;">${bubbles}</div>`;
-    } catch(e) { console.warn('messages err',e); }
-  }
-
-  const metaFields = isRecruiter
-    ? [['Recruiter', tickets.name||'—'],['Email', tickets.email],['Empresa', tickets.company||'—'],['Idioma', tickets.lang==='en'?'🇬🇧 English':'🇵🇹 Português'],['Fonte','🏢 Recruiter']]
-    : [['Utilizador', tickets.name||'—'],['Email', tickets.email],['Empresa', tickets.company||'—'],['Vaga', tickets.job||'—'],['Tipo', tickets.tipo==='formulario'?'⚠️ Problema no formulário':'💬 Problema no dashboard'],['Idioma', tickets.lang==='en'?'🇬🇧 English':'🇵🇹 Português']];
-
-  const blockStyle = 'background:#0d0d0d;border:1px solid #1e1e1e;border-radius:10px;padding:16px;margin-bottom:12px;';
-  const labelStyle = 'font-size:10px;color:#555;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;font-weight:600;';
-  const sectionTitle = 'font-size:11px;color:#5DCAA5;text-transform:uppercase;letter-spacing:.6px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:6px;';
-
-  if(isRecruiter) {
-    document.getElementById('ticket-modal-body').innerHTML = `
-      <!-- BLOCO 1: Info do recruiter -->
-      <div style="${blockStyle}">
-        <div style="${sectionTitle}">👤 ${tickets.lang==='en'?'Recruiter information':'Informação do recruiter'}</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;">
-          ${metaFields.map(([k,v])=>`<div><div style="${labelStyle}">${k}</div><div style="font-size:13px;color:#ddd;">${v}</div></div>`).join('')}
-        </div>
-      </div>
-
-      <!-- BLOCO 2: Assunto + Conversa -->
-      <div style="${blockStyle}">
-        <div style="${sectionTitle}">💬 ${tickets.lang==='en'?'Conversation':'Conversa'}</div>
-        <div style="${labelStyle}">${tickets.lang==='en'?'Subject':'Assunto'}</div>
-        <div style="font-size:14px;color:#ddd;font-weight:600;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #1e1e1e;">${tickets.assunto}</div>
-        ${conversationHtml || '<div style="font-size:12px;color:#555;font-style:italic;">'+(tickets.lang==='en'?'No messages yet.':'Sem mensagens ainda.')+'</div>'}
-      </div>`;
+      html = entries.map(e => {
+        const who = e.s === 'admin' ? 'admin' : 'user';
+        const name = e.s === 'admin' ? 'RHC Admin' : (t.name || 'Recruiter');
+        return `<div class="tk-bubble ${who}"><div class="tk-bubble-meta">${_tkEscape(name)} · ${_tkEscape(fmtDate(e.t))}</div><div>${_tkEscape(e.b)}</div></div>`;
+      }).join('');
+    } catch(e) { console.warn('thread err', e); }
+    if(!html) html = `<div class="tk-bubble user"><div class="tk-bubble-meta">${_tkEscape(t.name || '—')} · ${_tkEscape(fmtDate(t.created_at))}</div><div>${_tkEscape(t.descricao || '')}</div></div>`;
+    threadEl.innerHTML = html;
   } else {
-    document.getElementById('ticket-modal-body').innerHTML = `
-      <div style="${blockStyle}">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin-bottom:14px;">
-          ${metaFields.map(([k,v])=>`<div><div style="${labelStyle}">${k}</div><div style="font-size:13px;color:#ddd;">${v}</div></div>`).join('')}
-        </div>
-        <div style="${labelStyle}">Assunto</div>
-        <div style="font-size:13px;color:#ddd;font-weight:600;margin-bottom:10px;">${tickets.assunto}</div>
-        <div style="${labelStyle}">Descrição</div>
-        <div style="font-size:13px;color:#aaa;line-height:1.7;">${tickets.descricao}</div>
-        ${tickets.resposta ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid #1e1e1e;"><div style="font-size:11px;color:#5DCAA5;margin-bottom:4px;">✓ Resposta enviada:</div><div style="font-size:13px;color:#aaa;">${tickets.resposta}</div></div>` : ''}
-      </div>`;
+    // Candidate: description + (optional) resposta.
+    let html = `<div class="tk-bubble user"><div class="tk-bubble-meta">${_tkEscape(t.name || '—')} · ${_tkEscape(fmtDate(t.created_at))}</div><div>${_tkEscape(t.descricao || '')}</div></div>`;
+    if(t.resposta) {
+      html += `<div class="tk-bubble admin"><div class="tk-bubble-meta">RHC Admin · ${_tkEscape(fmtDate(t.updated_at || t.created_at))}</div><div>${_tkEscape(t.resposta)}</div></div>`;
+    }
+    threadEl.innerHTML = html;
   }
 
-  // Show/hide close ticket button for recruiters
-  const closeBtn = document.getElementById('btn-close-recruiter-ticket');
-  if(closeBtn) closeBtn.style.display = (isRecruiter && tickets.status !== 'fechado') ? 'block' : 'none';
-  // Change reply button label based on source
-  const replyBtn = document.querySelector('.modal-footer button:first-child');
-  if(replyBtn) replyBtn.textContent = isRecruiter ? '✓ Responder' : '✓ Responder e fechar';
+  // Composer vs closed message
+  const isClosed = t.status === 'fechado';
+  document.getElementById('tk-d-composer').style.display = isClosed ? 'none' : 'flex';
+  const closedEl = document.getElementById('tk-d-closed-msg');
+  if(closedEl) {
+    closedEl.style.display = isClosed ? 'block' : 'none';
+    const txt = document.getElementById('tk-d-closed-txt');
+    if(txt) txt.textContent = isEN ? '✓ Ticket closed' : '✓ Ticket fechado';
+  }
 
-  document.getElementById('modal-ticket').classList.add('open');
-  renderTickets();
+  // Show detail, hide empty.
+  document.getElementById('tk-empty-state').style.display = 'none';
+  document.getElementById('tk-detail').style.display = 'flex';
+
+  // Reset the reply textarea unless we're re-rendering the same ticket
+  // after a successful reply (silent mode).
+  if(!silent) {
+    const r = document.getElementById('tk-d-reply');
+    if(r) r.value = '';
+  }
+
+  // Re-render the list to reflect the .selected class.
+  _renderTicketList();
+}
+
+// Open the "View profile" modal for the currently-selected ticket.
+async function openTicketUserProfile() {
+  if(!_currentTicket) return;
+  const isEN = _tkIsEN();
+  const t = _currentTicket;
+  const isRecruiter = t.source === 'recruiter';
+
+  // Localise labels.
+  document.getElementById('up-title').textContent       = isEN ? 'User profile' : 'Perfil do utilizador';
+  document.getElementById('up-email-lbl').textContent   = 'Email';
+  document.getElementById('up-company-lbl').textContent = isEN ? 'Company' : 'Empresa';
+  document.getElementById('up-job-lbl').textContent     = isEN ? 'Role'    : 'Vaga';
+  document.getElementById('up-status-lbl').textContent  = isEN ? 'Status'  : 'Estado';
+  document.getElementById('up-close-btn').textContent   = isEN ? 'Close'   : 'Fechar';
+
+  document.getElementById('up-av').textContent   = initials(t.name || t.email);
+  document.getElementById('up-name').textContent = t.name || '—';
+  const srcEl = document.getElementById('up-source');
+  srcEl.className = 'tk-source-pill ' + (isRecruiter ? 'recruiter' : 'candidato');
+  srcEl.textContent = _tkSourceLabel(t.source, isEN);
+  document.getElementById('up-email').textContent   = t.email || '—';
+  document.getElementById('up-company').textContent = t.company || '—';
+
+  // Candidate-specific enrichment: fetch the candidates row to surface
+  // current status + role context. Skipped for recruiter tickets.
+  const jobRow    = document.getElementById('up-job-row');
+  const statusRow = document.getElementById('up-status-row');
+  if(isRecruiter) {
+    jobRow.style.display = 'none';
+    statusRow.style.display = 'none';
+  } else {
+    jobRow.style.display = '';
+    document.getElementById('up-job').textContent = t.job || '—';
+    statusRow.style.display = '';
+    const statusEl = document.getElementById('up-status');
+    statusEl.textContent = isEN ? 'Loading...' : 'A carregar...';
+    try {
+      const { data } = await supa.from('candidates')
+        .select('status').ilike('email', (t.email || '').trim().toLowerCase()).limit(1);
+      const row = data && data[0];
+      if(!row) {
+        statusEl.textContent = isEN ? 'Deleted' : 'Apagado';
+      } else if(row.status === 'Rejeitado') {
+        statusEl.textContent = isEN ? 'Rejected' : 'Rejeitado';
+      } else {
+        statusEl.textContent = isEN ? 'Active' : 'Activo';
+      }
+    } catch(e) {
+      statusEl.textContent = '—';
+    }
+  }
+  document.getElementById('modal-user-profile').classList.add('open');
+}
+
+function _openCloseTicketConfirm() {
+  if(!_currentTicket) return;
+  const isEN = _tkIsEN();
+  document.getElementById('close-tkt-title').textContent = isEN ? 'Close ticket' : 'Fechar ticket';
+  document.getElementById('close-tkt-confirm-title').textContent = isEN ? 'Are you sure you want to close this ticket?' : 'Tens a certeza que pretendes fechar este ticket?';
+  document.getElementById('close-tkt-confirm-body').textContent  = isEN ? "The ticket will move to 'Closed' and the user won't be able to reply anymore." : "O ticket vai passar para o estado 'Fechado' e o utilizador deixa de poder responder.";
+  document.getElementById('close-tkt-cancel-btn').textContent    = isEN ? 'Cancel' : 'Cancelar';
+  document.getElementById('close-tkt-confirm-btn').textContent   = isEN ? 'Yes, close ticket' : 'Sim, fechar ticket';
+  document.getElementById('modal-close-ticket-confirm').classList.add('open');
+}
+async function _doCloseTicket() {
+  closeModal('modal-close-ticket-confirm');
+  if(!_currentTicket) return;
+  await supa.from('tickets').update({ status: 'fechado', updated_at: new Date().toISOString() }).eq('id', _currentTicket.id);
+  _currentTicket.status = 'fechado';
+  const cached = _allTickets.find(x => x.id === _currentTicket.id); if(cached) cached.status = 'fechado';
+  loadTicketsBadge();
+  await renderTickets();
+  showToast(_tkIsEN() ? 'Ticket closed.' : 'Ticket fechado.');
 }
 
 let _deleteTicketId = null;
@@ -2577,8 +3271,10 @@ async function closeRecruiterTicket() {
 
 async function replyTicket() {
   if(!_currentTicket) return;
-  const reply = document.getElementById('ticket-reply-text').value.trim();
-  if(!reply) { alert('Escreve uma resposta antes de enviar.'); return; }
+  // textarea ID changed from 'ticket-reply-text' (legacy modal) to
+  // 'tk-d-reply' (split-view composer). Legacy modal is gone.
+  const reply = document.getElementById('tk-d-reply').value.trim();
+  if(!reply) { alert(_tkIsEN() ? 'Write a reply before sending.' : 'Escreve uma resposta antes de enviar.'); return; }
 
   const isRecruiter = _currentTicket.source === 'recruiter';
 
@@ -2608,13 +3304,12 @@ async function replyTicket() {
         updated_at: new Date().toISOString()
       }).eq('id', _currentTicket.id);
 
-      document.getElementById('ticket-reply-text').value = '';
-      closeModal('modal-ticket');
+      document.getElementById('tk-d-reply').value = '';
       loadTicketsBadge();
-      renderTickets();
-      showToast('✓ Mensagem enviada', {success: true});
+      await renderTickets();  // refreshes list + re-renders detail in place
+      showToast(_tkIsEN() ? '✓ Reply sent' : '✓ Mensagem enviada', {success: true});
     } catch(e) {
-      showToast('Erro ao enviar resposta');
+      showToast(_tkIsEN() ? 'Error sending reply' : 'Erro ao enviar resposta');
     }
     return;
   }
@@ -2654,10 +3349,11 @@ async function replyTicket() {
     });
   } catch(e) { console.warn('Email send failed:', e); }
 
-  closeModal('modal-ticket');
+  // Clear composer, refresh list + detail (re-renders shows closed badge).
+  const r = document.getElementById('tk-d-reply'); if(r) r.value = '';
   loadTicketsBadge();
-  renderTickets();
-  showToast('✓ Resposta enviada', {success: true});
+  await renderTickets();
+  showToast(_tkIsEN() ? '✓ Reply sent' : '✓ Resposta enviada', {success: true});
 }
 
 async function resendInviteTicket() {
@@ -2751,7 +3447,12 @@ async function _doResendInvite() {
 
 function openModal(id)  { document.getElementById(id).classList.add('open'); }
 function closeModal(id) {
-  document.getElementById(id).classList.remove('open');
+  // Null-guarded: legacy callers may reference modals that no longer
+  // exist (e.g. the old #modal-ticket replaced by the tickets split-view).
+  // Without the guard, a stray closeModal('modal-ticket') in dead paths
+  // throws "Cannot read properties of null" and aborts flows that
+  // happen to run after.
+  document.getElementById(id)?.classList.remove('open');
   document.getElementById('inv-link-box').style.display = 'none';
   document.getElementById('inv-company').value = '';
   document.getElementById('inv-email').value = '';
