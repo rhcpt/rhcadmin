@@ -2335,6 +2335,47 @@ async function renderTickets() {
     const statusLabel = { novo: 'Novo', em_analise: 'Em análise', fechado: 'Fechado' };
     const tipoBadge   = { formulario: '⚠ Formulário', dashboard: '💬 Dashboard' };
     const sourceBadge  = { recruiter: '🏢 Recruiter', candidato: '👤 Candidato', undefined: '' };
+    const isEN = (document.documentElement.lang || 'pt') === 'en';
+
+    // Cross-reference candidate-source tickets against the candidates
+    // table so we can flag rejected / deleted accounts. Single bulk
+    // query — independent of ticket count. Recruiter tickets skip the
+    // check (no candidates row by design).
+    const candidateEmails = [...new Set(
+      tickets
+        .filter(t => t.source !== 'recruiter')
+        .map(t => (t.email || '').trim().toLowerCase())
+        .filter(Boolean)
+    )];
+    const candStatusByEmail = new Map();
+    if(candidateEmails.length > 0) {
+      try {
+        const { data: cands } = await supa.from('candidates')
+          .select('email,status').in('email', candidateEmails);
+        (cands || []).forEach(c => {
+          candStatusByEmail.set((c.email || '').trim().toLowerCase(), c.status || null);
+        });
+      } catch(e) { console.warn('[renderTickets] candidate status lookup:', e); }
+    }
+
+    // Warn-coloured pill rendered inline next to the ticket owner's
+    // name. Three states: active candidate (no badge), rejected,
+    // deleted. Falls conservative — if the lookup map doesn't contain
+    // the email, treat it as deleted; same payload looks the same to
+    // the admin so no UX loss.
+    const _badgeStyle = 'display:inline-flex;align-items:center;gap:4px;background:rgba(239,184,74,.12);color:#efb84a;border:1px solid rgba(239,184,74,.3);border-radius:4px;padding:1px 6px;font-size:10px;font-weight:600;white-space:nowrap;';
+    const _candBadge = (t) => {
+      if(t.source === 'recruiter') return '';
+      const email = (t.email || '').trim().toLowerCase();
+      if(!email) return '';
+      if(!candStatusByEmail.has(email)) {
+        return `<span style="${_badgeStyle}" title="${isEN?'This candidate was deleted from the database':'Este candidato foi apagado da base de dados'}"><i class="ti ti-alert-triangle"></i>${isEN?'Candidate deleted':'Candidato apagado'}</span>`;
+      }
+      if(candStatusByEmail.get(email) === 'Rejeitado') {
+        return `<span style="${_badgeStyle}" title="${isEN?'This candidate was rejected':'Este candidato foi rejeitado'}"><i class="ti ti-alert-triangle"></i>${isEN?'Candidate rejected':'Candidato rejeitado'}</span>`;
+      }
+      return '';
+    };
 
     body.innerHTML = `
       <div class="table-head" style="grid-template-columns:2fr 2fr 1fr 1fr 1fr;"><div>Utilizador</div><div>Assunto</div><div>Tipo</div><div>Estado</div><div>Data</div></div>
@@ -2344,8 +2385,11 @@ async function renderTickets() {
           onmouseover="this.style.borderColor='#333'" onmouseout="this.style.borderColor='${t.status==='novo'?'rgba(226,107,107,.25)':'#1e1e1e'}'">
           <div class="company-info">
             <div class="company-avatar" style="width:28px;height:28px;font-size:11px;">${initials(t.name||t.email)}</div>
-            <div>
-              <div style="font-size:13px;color:#ddd;font-weight:500;">${t.name||'—'}</div>
+            <div style="min-width:0;">
+              <div style="font-size:13px;color:#ddd;font-weight:500;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <span>${t.name||'—'}</span>
+                ${_candBadge(t)}
+              </div>
               <div style="font-size:11px;color:#555;">${t.email}</div>
             </div>
           </div>
