@@ -436,7 +436,7 @@
             <div class="tk-composer" id="tk-d-composer">
               <textarea id="tk-d-reply" placeholder="Escreve a tua resposta..."></textarea>
               <div class="tk-composer-actions">
-                <button class="tk-btn-ghost" id="tk-btn-template" onclick="void(0)" title="Em breve" disabled style="opacity:.5;cursor:not-allowed;">
+                <button class="tk-btn-ghost" id="tk-btn-template" onclick="insertTemplateResponse()">
                   <span id="tk-btn-template-txt">Resposta padrão</span>
                 </button>
                 <div style="flex:1;"></div>
@@ -1612,6 +1612,9 @@
 /* ── Modal: confirmar fechar ticket ── */
 #modal-close-ticket-confirm .modal { max-width: 420px; width: 92vw; }
 
+/* ── Modal: confirmar substituir composer pelo template ── */
+#modal-template-confirm .modal { max-width: 420px; width: 92vw; }
+
 @media (max-width: 900px) {
   #tab-tickets .tk-split { grid-template-columns: 1fr; height: auto; }
   #tab-tickets .tk-detail-strip { grid-template-columns: repeat(2, 1fr); }
@@ -2025,6 +2028,23 @@
       <div id="up-status-row" style="display:none;"><div class="lbl" id="up-status-lbl">Estado</div><div class="val" id="up-status">—</div></div>
     </div>
     <button class="btn-primary" id="up-close-btn" onclick="closeModal('modal-user-profile')" style="width:100%;">Fechar</button>
+  </div>
+</div>
+
+<!-- MODAL: confirm replace composer text with template -->
+<div class="modal-bg" id="modal-template-confirm" onclick="if(event.target===this) closeModal('modal-template-confirm')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="template-confirm-title" style="color:#5DCAA5;">Substituir texto actual?</div>
+      <button class="modal-close" onclick="closeModal('modal-template-confirm')">×</button>
+    </div>
+    <div style="margin-bottom:18px;">
+      <div id="template-confirm-body" style="font-size:13.5px;color:#ddd;line-height:1.65;">O composer já tem texto. Substituir pelo template?</div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="closeModal('modal-template-confirm')" id="template-confirm-cancel" style="flex:1;padding:11px;background:none;border:1px solid #2a2a2a;border-radius:8px;color:#888;font-size:13px;cursor:pointer;font-family:inherit;">Cancelar</button>
+      <button onclick="_confirmApplyTemplate()" id="template-confirm-ok" style="flex:1;padding:11px;background:#5DCAA5;border:none;border-radius:8px;color:#0a0a0a;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Substituir</button>
+    </div>
   </div>
 </div>
 
@@ -3214,6 +3234,67 @@ async function _doCloseTicket() {
   loadTicketsBadge();
   await renderTickets();
   showToast(_tkIsEN() ? 'Ticket closed.' : 'Ticket fechado.');
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Template response (composer)
+   Inserts a localised greeting + sign-off into #tk-d-reply so the
+   admin only has to type the middle part. Language follows the
+   ticket's own `lang` column (PT fallback) — same logic the strip
+   uses to badge the ticket. If the composer already has text, we
+   open a confirm modal before overwriting.
+   ────────────────────────────────────────────────────────────── */
+function _buildTemplate() {
+  const lang = (_currentTicket && _currentTicket.lang === 'en') ? 'en' : 'pt';
+  const firstName = ((_currentTicket && _currentTicket.name) || '').trim().split(/\s+/)[0] || '';
+  if(lang === 'en') {
+    return {
+      before: (firstName ? `Hi ${firstName},` : 'Hi,') + '\n\nThank you for reaching out.\n\n',
+      after:  '\n\nIf you have any further questions, feel free to reply to this ticket.\n\nBest regards,\nRHC Team\nhello@rhc.pt'
+    };
+  }
+  return {
+    before: (firstName ? `Olá ${firstName},` : 'Olá,') + '\n\nObrigado pelo teu contacto.\n\n',
+    after:  '\n\nSe tiveres mais alguma dúvida, não hesites em responder a este ticket.\n\nCumprimentos,\nEquipa RHC\nhello@rhc.pt'
+  };
+}
+
+function _applyTemplate() {
+  const r = document.getElementById('tk-d-reply');
+  if(!r) return;
+  const { before, after } = _buildTemplate();
+  r.value = before + after;
+  r.focus();
+  const cursorPos = before.length;
+  r.setSelectionRange(cursorPos, cursorPos);
+  // Show the start of the template (the greeting) — setSelectionRange does
+  // not auto-scroll, and the sign-off below the cursor isn't worth seeing first.
+  r.scrollTop = 0;
+}
+
+function _openTemplateConfirm() {
+  const isEN = _tkIsEN();
+  document.getElementById('template-confirm-title').textContent  = isEN ? 'Replace current text?' : 'Substituir texto actual?';
+  document.getElementById('template-confirm-body').textContent   = isEN ? 'The composer has text. Replace it with the template?' : 'O composer já tem texto. Substituir pelo template?';
+  document.getElementById('template-confirm-cancel').textContent = isEN ? 'Cancel'  : 'Cancelar';
+  document.getElementById('template-confirm-ok').textContent     = isEN ? 'Replace' : 'Substituir';
+  document.getElementById('modal-template-confirm').classList.add('open');
+}
+
+function _confirmApplyTemplate() {
+  closeModal('modal-template-confirm');
+  _applyTemplate();
+}
+
+function insertTemplateResponse() {
+  if(!_currentTicket) return;
+  const r = document.getElementById('tk-d-reply');
+  if(!r) return;
+  if(r.value.trim().length > 0) {
+    _openTemplateConfirm();
+    return;
+  }
+  _applyTemplate();
 }
 
 let _deleteTicketId = null;
