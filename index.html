@@ -2548,23 +2548,14 @@ async function openCompanyDetails(orgId) {
   const c = (STATE.companies || []).find(x => x.id === orgId);
   if(!c) { showToast('⚠️ Empresa não encontrada'); return; }
 
-  // Best-effort lookup of the invite email (used as fallback if the
-  // server-side recruiter fetch fails).
-  const inviteEmailByCompany = {};
-  (STATE.invites || []).forEach(inv => {
-    if(!inv.company_name || !inv.email) return;
-    const key = inv.company_name.trim().toLowerCase();
-    if(!inviteEmailByCompany[key]) inviteEmailByCompany[key] = inv.email;
-  });
-  const fallbackEmail = inviteEmailByCompany[(c.name||'').trim().toLowerCase()] || c.email || '—';
-
-  // Populate the static fields immediately so the modal feels responsive.
+  // Denormalized fields populated at registration time + by saveProfile in
+  // rhcportal. For new orgs the modal renders instantly with no network calls.
   document.getElementById('cd-title').textContent = `Detalhes da Empresa: ${c.name || '—'}`;
-  document.getElementById('cd-company').textContent       = c.name || '—';
-  document.getElementById('cd-recruiter-name').textContent  = '—';
-  document.getElementById('cd-recruiter-email').textContent = fallbackEmail;
-  document.getElementById('cd-cands').textContent         = String(c.candidateCount || 0);
-  document.getElementById('cd-created').textContent       = c.created_at
+  document.getElementById('cd-company').textContent         = c.name || '—';
+  document.getElementById('cd-recruiter-name').textContent  = c.recruiter_name  || '—';
+  document.getElementById('cd-recruiter-email').textContent = c.recruiter_email || '—';
+  document.getElementById('cd-cands').textContent           = String(c.candidateCount || 0);
+  document.getElementById('cd-created').textContent         = c.created_at
     ? new Date(c.created_at).toLocaleDateString('pt-PT')
     : '—';
   const planSel = document.getElementById('cd-plan');
@@ -2573,20 +2564,23 @@ async function openCompanyDetails(orgId) {
 
   openModal('modal-company-details');
 
-  // Server-side fetch of recruiter name + email via the admin endpoint.
-  try {
-    const _hdr = await _supaAuthHeader();
-    if(!_hdr) return;
-    const res = await fetch('https://rhcportal.vercel.app/api/admin-get-org-recruiter', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': _hdr },
-      body: JSON.stringify({ org_id: orgId })
-    });
-    if(!res.ok) return;
-    const data = await res.json();
-    if(data && data.name)  document.getElementById('cd-recruiter-name').textContent  = data.name;
-    if(data && data.email) document.getElementById('cd-recruiter-email').textContent = data.email;
-  } catch(e) { /* keep the fallbacks shown above */ }
+  // Fallback for legacy orgs (created before denormalization) where BOTH
+  // columns are NULL. Hits the admin endpoint to read from auth.users.
+  if(!c.recruiter_name && !c.recruiter_email) {
+    try {
+      const _hdr = await _supaAuthHeader();
+      if(!_hdr) return;
+      const res = await fetch('https://rhcportal.vercel.app/api/admin-get-org-recruiter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': _hdr },
+        body: JSON.stringify({ org_id: orgId })
+      });
+      if(!res.ok) return;
+      const data = await res.json();
+      if(data && data.name)  document.getElementById('cd-recruiter-name').textContent  = data.name;
+      if(data && data.email) document.getElementById('cd-recruiter-email').textContent = data.email;
+    } catch(e) { /* leave the "—" placeholders */ }
+  }
 }
 
 async function updateOrgPlan(orgId, newPlan) {
