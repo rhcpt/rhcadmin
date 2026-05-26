@@ -2224,7 +2224,7 @@ async function _supaAuthHeader() {
 let _explicitLogout = false;
 supa.auth.onAuthStateChange((event, session) => {
   if (event === 'SIGNED_OUT' || (!session && ADMIN)) {
-    teardownCandidatesRealtime();
+    teardownRealtimeSubscriptions();
     const wasLoggedIn = !!ADMIN;
     ADMIN = null;
     const mainEl = document.getElementById('main-page');
@@ -2307,8 +2307,8 @@ function buildEmailHTML(opts) {
 // 'admin' = full access (default for legacy rows without a role column).
 // 'suporte' = tickets only; view companies but cannot add/remove; no admin management page.
 let CURRENT_ROLE = 'admin';
-let _candidatesChannel      = null;
-let _candidatesRefreshTimer = null;
+let _realtimeChannel      = null;
+let _realtimeRefreshTimer = null;
 let ADMIN = null;
 let STATE = { companies: [], invites: [], admins: [] };
 
@@ -2414,7 +2414,7 @@ async function enterAdmin() {
   applyAdminProfile();
   applyRoleUI();
   await loadData();
-  setupCandidatesRealtime();
+  setupRealtimeSubscriptions();
 }
 
 // Hide/show navigation items + buttons based on CURRENT_ROLE.
@@ -2462,45 +2462,52 @@ function applyRoleUI() {
   // enterAdmin() at mount time. No more top-right role-badge pill.
 }
 
-// ── Realtime: keep candidateCount live without F5 ──
-// Subscribe once per admin session to all candidates changes. A burst of
-// events (e.g. INSERT followed by UPDATE on submit) collapses into a
-// single loadData() via a 500ms debounce. Suporte/marketing roles skip
-// the subscription entirely (no need / RLS would block reads anyway).
-function setupCandidatesRealtime() {
+// ── Realtime: keep tables + modal live without F5 ──
+// One channel, two subscriptions (candidates + organizations). A burst of
+// events from either table (e.g. INSERT in candidates immediately followed
+// by UPDATE in organizations during recruiter registration) collapses into
+// a single loadData() via a shared 500ms debounce. Suporte/marketing roles
+// skip the subscription entirely (RLS would block their reads anyway).
+function setupRealtimeSubscriptions() {
   if(CURRENT_ROLE !== 'admin') return;
-  if(_candidatesChannel)        return;   // idempotent — guard against double enterAdmin
+  if(_realtimeChannel)         return;   // idempotent — guard against double enterAdmin
+  const scheduleRefresh = () => {
+    clearTimeout(_realtimeRefreshTimer);
+    _realtimeRefreshTimer = setTimeout(async () => {
+      try {
+        await loadData();
+        refreshCompanyDetailsIfOpen();
+      } catch(e) { console.warn('admin realtime refresh failed:', e); }
+    }, 500);
+  };
   try {
-    _candidatesChannel = supa.channel('admin-candidates-sync')
+    _realtimeChannel = supa.channel('admin-realtime-sync')
       .on('postgres_changes',
           { event: '*', schema: 'public', table: 'candidates' },
-          () => {
-            clearTimeout(_candidatesRefreshTimer);
-            _candidatesRefreshTimer = setTimeout(async () => {
-              try {
-                await loadData();
-                refreshCompanyDetailsIfOpen();
-              } catch(e) { console.warn('admin realtime refresh failed:', e); }
-            }, 500);
-          })
+          scheduleRefresh)
+      .on('postgres_changes',
+          { event: '*', schema: 'public', table: 'organizations' },
+          scheduleRefresh)
       .subscribe();
   } catch(e) { console.warn('Realtime setup failed:', e); }
 }
 
-function teardownCandidatesRealtime() {
-  if(_candidatesRefreshTimer) {
-    clearTimeout(_candidatesRefreshTimer);
-    _candidatesRefreshTimer = null;
+function teardownRealtimeSubscriptions() {
+  if(_realtimeRefreshTimer) {
+    clearTimeout(_realtimeRefreshTimer);
+    _realtimeRefreshTimer = null;
   }
-  if(_candidatesChannel) {
-    try { supa.removeChannel(_candidatesChannel); } catch(e) {}
-    _candidatesChannel = null;
+  if(_realtimeChannel) {
+    try { supa.removeChannel(_realtimeChannel); } catch(e) {}
+    _realtimeChannel = null;
   }
 }
 
-// Modal Detalhes da Empresa lê STATE.companies[i].candidateCount which has
-// just been refreshed by loadData(). Patch the visible cell so the modal
-// stays in sync without forcing the admin to close + reopen it.
+// Modal Detalhes da Empresa lê STATE.companies[i] which was just refreshed
+// by loadData(). Patch every visible cell so the modal stays in sync with
+// any change to the org row (name, recruiter, plan, count). If the org was
+// deleted externally, close the modal graceful instead of leaving stale
+// data on screen.
 function refreshCompanyDetailsIfOpen() {
   const modal = document.getElementById('modal-company-details');
   if(!modal || !modal.classList.contains('open')) return;
@@ -2508,9 +2515,16 @@ function refreshCompanyDetailsIfOpen() {
   const orgId = planSel && planSel.dataset.orgId;
   if(!orgId) return;
   const c = (STATE.companies || []).find(x => x.id === orgId);
-  if(!c) return;
-  const cdCands = document.getElementById('cd-cands');
-  if(cdCands) cdCands.textContent = String(c.candidateCount || 0);
+  if(!c) { closeModal('modal-company-details'); return; }
+  document.getElementById('cd-title').textContent           = `Detalhes da Empresa: ${c.name || '—'}`;
+  document.getElementById('cd-company').textContent         = c.name || '—';
+  document.getElementById('cd-recruiter-name').textContent  = c.recruiter_name  || '—';
+  document.getElementById('cd-recruiter-email').textContent = c.recruiter_email || '—';
+  document.getElementById('cd-cands').textContent           = String(c.candidateCount || 0);
+  document.getElementById('cd-created').textContent         = c.created_at
+    ? new Date(c.created_at).toLocaleDateString('pt-PT')
+    : '—';
+  if(planSel) planSel.value = c.plan || 'starter';
 }
 
 // ── DATA ──────────────────────────────────────────
