@@ -161,7 +161,7 @@
   .table-row:last-child { border-bottom: none; }
   .table-row:hover { background: var(--ink3); }
   .companies-grid { grid-template-columns: 2fr 1fr 160px; }
-  .invites-grid   { grid-template-columns: 2fr 1.5fr 1fr 1fr 1.2fr 120px; }
+  .invites-grid   { grid-template-columns: 2fr 1fr 1fr 160px; }
 
   .company-avatar {
     width: 32px; height: 32px; border-radius: 8px;
@@ -348,10 +348,8 @@
       <div class="table-wrap">
         <div class="table-head invites-grid">
           <div>Empresa</div>
-          <div>Email</div>
           <div>Criado em</div>
           <div>Estado</div>
-          <div>Pack</div>
           <div>Link</div>
         </div>
         <div id="invites-body"></div>
@@ -2610,36 +2608,16 @@ function renderInvites() {
   body.innerHTML = STATE.invites.map(inv => {
     const date = new Date(inv.created_at).toLocaleDateString('pt-PT');
     const link = `${RECRUITER_PORTAL}?invite=${inv.token}&company=${encodeURIComponent(inv.company_name)}`;
-    const curPlan = inv.plan || 'starter';
-    // Allow plan edit only while the invite is still pending (not yet redeemed).
-    const planCell = inv.used
-      ? `<span style="font-size:13px;color:#aaa;">${({starter:'Starter',growth:'Growth',pro:'Pro'})[curPlan]||'Starter'}</span>`
-      : `<select onchange="updateInvitePlan('${inv.id}', this.value)" style="background:#0d0d0d;border:1px solid #2a2a2a;border-radius:6px;color:#ddd;font-size:12px;padding:5px 8px;cursor:pointer;">
-          <option value="starter" ${curPlan==='starter'?'selected':''}>Starter</option>
-          <option value="growth"  ${curPlan==='growth' ?'selected':''}>Growth</option>
-          <option value="pro"     ${curPlan==='pro'    ?'selected':''}>Pro</option>
-        </select>`;
     return `
     <div class="table-row invites-grid">
       <div style="font-size:13px;color:#ddd;font-weight:500;">${inv.company_name}</div>
-      <div style="font-size:13px;color:#aaa;">${inv.email||'—'}</div>
       <div style="font-size:12px;color:#555;">${date}</div>
       <div><span class="status-pill ${inv.used?'pill-used':'pill-pending'}">${inv.used?'Usado':'Pendente'}</span></div>
-      <div>${planCell}</div>
       <div style="display:flex;gap:5px;">
         <button class="action-btn" onclick="copyLink('${link}')">📋 Link</button>
         ${!inv.used && CURRENT_ROLE === 'admin' ? `<button class="action-btn danger" onclick="cancelInvite('${inv.id}')">Cancelar</button>` : ''}
       </div>
     </div>`; }).join('');
-}
-
-async function updateInvitePlan(inviteId, newPlan) {
-  if(!['starter','growth','pro'].includes(newPlan)) return;
-  const { error } = await supa.from('company_invites').update({ plan: newPlan }).eq('id', inviteId);
-  if(error) { showToast('⚠️ Erro ao actualizar pack do convite'); return; }
-  const inv = (STATE.invites||[]).find(i => i.id === inviteId);
-  if(inv) inv.plan = newPlan;
-  showToast('✓ Pack do convite actualizado');
 }
 
 function renderAdmins() {
