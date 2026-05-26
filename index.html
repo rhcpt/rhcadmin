@@ -160,8 +160,8 @@
   }
   .table-row:last-child { border-bottom: none; }
   .table-row:hover { background: var(--ink3); }
-  .companies-grid { grid-template-columns: 2fr 1.5fr 1fr 1fr 120px; }
-  .invites-grid   { grid-template-columns: 2fr 1.5fr 1fr 1fr 120px; }
+  .companies-grid { grid-template-columns: 2fr 1fr 160px; }
+  .invites-grid   { grid-template-columns: 2fr 1.5fr 1fr 1fr 1.2fr 120px; }
 
   .company-avatar {
     width: 32px; height: 32px; border-radius: 8px;
@@ -329,9 +329,7 @@
       <div class="table-wrap">
         <div class="table-head companies-grid">
           <div>Empresa</div>
-          <div>Email</div>
-          <div>Candidatos</div>
-          <div>Estado</div>
+          <div>Pack</div>
           <div>Ações</div>
         </div>
         <div id="companies-body"></div>
@@ -353,6 +351,7 @@
           <div>Email</div>
           <div>Criado em</div>
           <div>Estado</div>
+          <div>Pack</div>
           <div>Link</div>
         </div>
         <div id="invites-body"></div>
@@ -2066,6 +2065,44 @@
   </div>
 </div>
 
+<!-- MODAL: COMPANY DETAILS -->
+<div class="modal-bg" id="modal-company-details">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="cd-title">Detalhes da Empresa</div>
+      <button class="modal-close" onclick="closeModal('modal-company-details')">×</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label" style="font-size:12px;color:#666;display:block;margin-bottom:6px;">Empresa</label>
+      <div id="cd-company" style="color:#ddd;font-size:14px;">—</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" style="font-size:12px;color:#666;display:block;margin-bottom:6px;">Nome do recruiter</label>
+      <div id="cd-recruiter-name" style="color:#aaa;font-size:13px;">—</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" style="font-size:12px;color:#666;display:block;margin-bottom:6px;">Email do recruiter</label>
+      <div id="cd-recruiter-email" style="color:#aaa;font-size:13px;">—</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" style="font-size:12px;color:#666;display:block;margin-bottom:6px;">Candidatos</label>
+      <div id="cd-cands" style="color:#aaa;font-size:13px;">—</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" style="font-size:12px;color:#666;display:block;margin-bottom:6px;">Criação</label>
+      <div id="cd-created" style="color:#aaa;font-size:13px;">—</div>
+    </div>
+    <div class="form-group" style="margin-bottom:0;">
+      <label class="form-label" style="font-size:12px;color:#666;display:block;margin-bottom:6px;">Pack</label>
+      <select id="cd-plan" class="form-select" onchange="updateOrgPlan(this.dataset.orgId, this.value)" style="width:100%;background:#0d0d0d;border:1px solid #2a2a2a;border-radius:8px;color:#ddd;font-size:13px;padding:10px 12px;">
+        <option value="starter">Starter (5 vagas)</option>
+        <option value="growth">Growth (25 vagas)</option>
+        <option value="pro">Pro (50 vagas)</option>
+      </select>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: INVITE -->
 <div class="modal-bg" id="modal-invite">
   <div class="modal">
@@ -2086,6 +2123,14 @@
       <select id="inv-lang" class="form-select" style="width:100%;background:#0d0d0d;border:1px solid #2a2a2a;border-radius:8px;color:#ddd;font-size:13px;padding:10px 12px;">
         <option value="pt">🇵🇹 Português</option>
         <option value="en">🇬🇧 English</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin-bottom:16px;">
+      <label class="form-label" style="font-size:12px;color:#666;display:block;margin-bottom:6px;">Pack</label>
+      <select id="inv-plan" class="form-select" style="width:100%;background:#0d0d0d;border:1px solid #2a2a2a;border-radius:8px;color:#ddd;font-size:13px;padding:10px 12px;">
+        <option value="starter" selected>Starter (5 vagas)</option>
+        <option value="growth">Growth (25 vagas)</option>
+        <option value="pro">Pro (50 vagas)</option>
       </select>
     </div>
     <button class="btn-primary" onclick="generateInvite()">Enviar convite</button>
@@ -2480,25 +2525,80 @@ function renderCompanies() {
     if(!existing) inviteEmailByCompany[key] = inv.email;
   });
 
+  const planLabel = { starter: 'Starter', growth: 'Growth', pro: 'Pro' };
   body.innerHTML = STATE.companies.map(c => {
-    const inviteEmail = inviteEmailByCompany[(c.name||'').trim().toLowerCase()] || c.email || '—';
+    const planText = planLabel[c.plan] || 'Starter';
     return `
     <div class="table-row companies-grid">
-      <div class="company-info">
+      <div class="company-info" onclick="openCompanyDetails('${c.id}')" style="cursor:pointer;">
         <div class="company-avatar">${initials(c.name)}</div>
         <div>
           <div style="font-size:13px;color:#ddd;font-weight:500;">${c.name||'—'}</div>
         </div>
       </div>
-      <div style="font-size:13px;color:#aaa;">${inviteEmail}</div>
-      <div style="font-size:13px;color:#aaa;">${c.candidateCount}</div>
-      <div><span class="status-pill pill-active">Activa</span></div>
+      <div style="font-size:13px;color:#aaa;">${planText}</div>
       <div style="display:flex;gap:6px;">
         <button class="action-btn enter" onclick="enterAsCompany('${c.id}','${encodeURIComponent(c.name||'')}')">Entrar</button>
         ${CURRENT_ROLE === 'admin' ? `<button class="action-btn danger" onclick="removeCompany('${c.id}','${encodeURIComponent(c.name||'')}')">Remover</button>` : ''}
       </div>
     </div>`;
   }).join('');
+}
+
+// ── Detalhes da Empresa modal ──
+async function openCompanyDetails(orgId) {
+  const c = (STATE.companies || []).find(x => x.id === orgId);
+  if(!c) { showToast('⚠️ Empresa não encontrada'); return; }
+
+  // Best-effort lookup of the invite email (used as fallback if the
+  // server-side recruiter fetch fails).
+  const inviteEmailByCompany = {};
+  (STATE.invites || []).forEach(inv => {
+    if(!inv.company_name || !inv.email) return;
+    const key = inv.company_name.trim().toLowerCase();
+    if(!inviteEmailByCompany[key]) inviteEmailByCompany[key] = inv.email;
+  });
+  const fallbackEmail = inviteEmailByCompany[(c.name||'').trim().toLowerCase()] || c.email || '—';
+
+  // Populate the static fields immediately so the modal feels responsive.
+  document.getElementById('cd-title').textContent = `Detalhes da Empresa: ${c.name || '—'}`;
+  document.getElementById('cd-company').textContent       = c.name || '—';
+  document.getElementById('cd-recruiter-name').textContent  = '—';
+  document.getElementById('cd-recruiter-email').textContent = fallbackEmail;
+  document.getElementById('cd-cands').textContent         = String(c.candidateCount || 0);
+  document.getElementById('cd-created').textContent       = c.created_at
+    ? new Date(c.created_at).toLocaleDateString('pt-PT')
+    : '—';
+  const planSel = document.getElementById('cd-plan');
+  planSel.value = c.plan || 'starter';
+  planSel.dataset.orgId = c.id;
+
+  openModal('modal-company-details');
+
+  // Server-side fetch of recruiter name + email via the admin endpoint.
+  try {
+    const _hdr = await _supaAuthHeader();
+    if(!_hdr) return;
+    const res = await fetch('https://rhcportal.vercel.app/api/admin-get-org-recruiter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': _hdr },
+      body: JSON.stringify({ org_id: orgId })
+    });
+    if(!res.ok) return;
+    const data = await res.json();
+    if(data && data.name)  document.getElementById('cd-recruiter-name').textContent  = data.name;
+    if(data && data.email) document.getElementById('cd-recruiter-email').textContent = data.email;
+  } catch(e) { /* keep the fallbacks shown above */ }
+}
+
+async function updateOrgPlan(orgId, newPlan) {
+  if(!['starter','growth','pro'].includes(newPlan)) return;
+  const { error } = await supa.from('organizations').update({ plan: newPlan }).eq('id', orgId);
+  if(error) { showToast('⚠️ Erro ao actualizar pack'); return; }
+  const c = (STATE.companies || []).find(x => x.id === orgId);
+  if(c) c.plan = newPlan;
+  if(typeof renderCompanies === 'function') renderCompanies();
+  showToast('✓ Pack actualizado');
 }
 
 function renderInvites() {
@@ -2510,17 +2610,36 @@ function renderInvites() {
   body.innerHTML = STATE.invites.map(inv => {
     const date = new Date(inv.created_at).toLocaleDateString('pt-PT');
     const link = `${RECRUITER_PORTAL}?invite=${inv.token}&company=${encodeURIComponent(inv.company_name)}`;
+    const curPlan = inv.plan || 'starter';
+    // Allow plan edit only while the invite is still pending (not yet redeemed).
+    const planCell = inv.used
+      ? `<span style="font-size:13px;color:#aaa;">${({starter:'Starter',growth:'Growth',pro:'Pro'})[curPlan]||'Starter'}</span>`
+      : `<select onchange="updateInvitePlan('${inv.id}', this.value)" style="background:#0d0d0d;border:1px solid #2a2a2a;border-radius:6px;color:#ddd;font-size:12px;padding:5px 8px;cursor:pointer;">
+          <option value="starter" ${curPlan==='starter'?'selected':''}>Starter</option>
+          <option value="growth"  ${curPlan==='growth' ?'selected':''}>Growth</option>
+          <option value="pro"     ${curPlan==='pro'    ?'selected':''}>Pro</option>
+        </select>`;
     return `
     <div class="table-row invites-grid">
       <div style="font-size:13px;color:#ddd;font-weight:500;">${inv.company_name}</div>
       <div style="font-size:13px;color:#aaa;">${inv.email||'—'}</div>
       <div style="font-size:12px;color:#555;">${date}</div>
       <div><span class="status-pill ${inv.used?'pill-used':'pill-pending'}">${inv.used?'Usado':'Pendente'}</span></div>
+      <div>${planCell}</div>
       <div style="display:flex;gap:5px;">
         <button class="action-btn" onclick="copyLink('${link}')">📋 Link</button>
         ${!inv.used && CURRENT_ROLE === 'admin' ? `<button class="action-btn danger" onclick="cancelInvite('${inv.id}')">Cancelar</button>` : ''}
       </div>
     </div>`; }).join('');
+}
+
+async function updateInvitePlan(inviteId, newPlan) {
+  if(!['starter','growth','pro'].includes(newPlan)) return;
+  const { error } = await supa.from('company_invites').update({ plan: newPlan }).eq('id', inviteId);
+  if(error) { showToast('⚠️ Erro ao actualizar pack do convite'); return; }
+  const inv = (STATE.invites||[]).find(i => i.id === inviteId);
+  if(inv) inv.plan = newPlan;
+  showToast('✓ Pack do convite actualizado');
 }
 
 function renderAdmins() {
@@ -2573,9 +2692,10 @@ async function generateInvite() {
   if(btn) { btn.disabled = true; btn.textContent = 'A enviar...'; }
 
   const token = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+  const invPlan = document.getElementById('inv-plan')?.value || 'starter';
   const { error } = await supa.from('company_invites').insert({
     company_name: company, email: email||null,
-    token, created_by: ADMIN.email
+    token, created_by: ADMIN.email, plan: invPlan
   });
   if(error) { showToast('Erro ao criar convite'); if(btn){btn.disabled=false;btn.textContent='Enviar convite';} return; }
 
@@ -3537,6 +3657,8 @@ function closeModal(id) {
   document.getElementById('inv-link-box').style.display = 'none';
   document.getElementById('inv-company').value = '';
   document.getElementById('inv-email').value = '';
+  const _invPlan = document.getElementById('inv-plan');
+  if(_invPlan) _invPlan.value = 'starter';
 }
 
 let _toastTimer;
