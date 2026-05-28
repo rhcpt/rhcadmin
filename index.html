@@ -1617,6 +1617,57 @@
   #tab-tickets .tk-detail-strip { grid-template-columns: repeat(2, 1fr); }
   #tab-tickets .tk-detail-strip > div:nth-child(odd) { border-left: none; }
 }
+
+/* ═══ Modal "Detalhes da Empresa" redesign + Modal Mudar Plano ═══ */
+.cd-header { display:flex; align-items:center; gap:14px; padding:24px 28px; border-bottom:1px solid var(--border); }
+.cd-avatar { width:48px; height:48px; border-radius:12px; background:rgba(0,229,160,.12); border:1px solid rgba(0,229,160,.25); display:flex; align-items:center; justify-content:center; font-family:var(--font-head); font-weight:700; font-size:18px; color:var(--accent); flex-shrink:0; }
+.cd-header-info { flex:1; min-width:0; }
+.cd-name { font-family:var(--font-head); font-size:20px; font-weight:700; color:var(--paper); letter-spacing:-0.3px; }
+.cd-meta { font-size:11.5px; color:var(--muted); display:flex; align-items:center; gap:10px; margin-top:4px; }
+.cd-pill { background:rgba(0,229,160,.12); color:var(--accent); padding:3px 10px; border-radius:999px; font-size:10px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; border:1px solid rgba(0,229,160,.25); }
+.cd-body { padding:24px 28px 28px; }
+
+.stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:22px; }
+.stat-card { background:var(--ink2); border:1px solid var(--border); border-radius:10px; padding:12px 10px; text-align:center; }
+.stat-label { font-family:'JetBrains Mono',monospace; font-size:9.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px; }
+.stat-value { font-family:var(--font-head); font-size:22px; font-weight:700; color:var(--paper); }
+
+.recruiter-card { display:flex; align-items:center; gap:12px; background:var(--ink2); border:1px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:20px; }
+.recruiter-avatar { width:36px; height:36px; border-radius:10px; background:rgba(0,229,160,.12); border:1px solid rgba(0,229,160,.25); display:flex; align-items:center; justify-content:center; font-family:var(--font-head); font-weight:700; font-size:13px; color:var(--accent); flex-shrink:0; }
+.recruiter-info { flex:1; min-width:0; }
+.recruiter-name { font-size:13.5px; font-weight:500; color:var(--paper); }
+.recruiter-email { font-size:12px; color:var(--muted); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.copy-btn { background:var(--ink3); border:1px solid var(--border2); border-radius:8px; padding:8px 10px; cursor:pointer; color:var(--muted); transition:all .15s; flex-shrink:0; display:inline-flex; align-items:center; justify-content:center; }
+.copy-btn:hover { background:rgba(0,229,160,.12); border-color:rgba(0,229,160,.3); color:var(--accent); }
+
+.plan-section { background:var(--ink2); border:1px solid var(--border); border-radius:12px; padding:16px 18px; }
+.plan-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; gap:12px; }
+.plan-label { font-family:'JetBrains Mono',monospace; font-size:9.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:2px; }
+.plan-name { font-family:var(--font-head); font-size:16px; font-weight:700; color:var(--paper); }
+.btn-secondary { background:transparent; border:1px solid var(--border2); border-radius:8px; padding:7px 14px; font-size:12px; color:var(--paper); cursor:pointer; transition:all .15s; }
+.btn-secondary:hover { border-color:var(--accent); color:var(--accent); }
+.usage-bar-wrap { font-size:11.5px; color:var(--muted); }
+.usage-label { display:flex; justify-content:space-between; margin-bottom:6px; }
+.usage-bar { height:6px; background:var(--border); border-radius:3px; overflow:hidden; }
+.usage-fill { height:100%; background:linear-gradient(90deg, var(--accent2), var(--accent)); border-radius:3px; transition:width .3s; }
+
+.plan-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+.plan-card { background:var(--ink2); border:1px solid var(--border); border-radius:14px; padding:22px 18px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:6px; transition:all .15s; }
+.plan-card.active { border-color:var(--accent); background:linear-gradient(135deg, rgba(0,229,160,.06), rgba(0,229,160,.02)); }
+.plan-card-name { font-family:var(--font-head); font-size:14px; font-weight:700; color:var(--paper); }
+.plan-card-jobs { font-family:var(--font-head); font-size:40px; font-weight:800; color:var(--accent); line-height:1; margin-top:8px; }
+.plan-card-jobs-label { font-size:11px; color:var(--muted); margin-bottom:14px; }
+.plan-card-features { list-style:none; padding:0; margin:0 0 18px; font-size:12px; color:var(--paper); text-align:left; align-self:stretch; }
+.plan-card-features li { padding:4px 0; display:flex; align-items:center; gap:8px; }
+.plan-card-features li::before { content:'✓'; color:var(--accent); font-weight:700; }
+.plan-card-btn { width:100%; background:var(--accent); border:none; border-radius:8px; padding:10px; color:var(--ink); font-weight:600; font-size:13px; cursor:pointer; transition:all .15s; margin-top:auto; }
+.plan-card-btn:hover:not(:disabled) { background:var(--accent2); color:#fff; }
+.plan-card-btn:disabled { background:var(--ink3); color:var(--muted); cursor:not-allowed; border:1px solid var(--border2); }
+
+@media (max-width:600px) {
+  .stats-grid { grid-template-columns:repeat(2,1fr); }
+  .plan-cards { grid-template-columns:1fr; }
+}
 </style>
 
 <div id="marketing-area" class="app-shell" style="display:none;">
@@ -2065,38 +2116,108 @@
 
 <!-- MODAL: COMPANY DETAILS -->
 <div class="modal-bg" id="modal-company-details">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title" id="cd-title">Detalhes da Empresa</div>
+  <div class="modal" style="width:560px;max-width:100%;padding:0;border-radius:18px;overflow:hidden;">
+    <div class="cd-header">
+      <div class="cd-avatar" id="cd-avatar">—</div>
+      <div class="cd-header-info">
+        <div class="cd-name" id="cd-name">—</div>
+        <div class="cd-meta">
+          <span class="cd-pill">Activa</span>
+          <span id="cd-created">—</span>
+        </div>
+      </div>
       <button class="modal-close" onclick="closeModal('modal-company-details')">×</button>
     </div>
-    <div class="form-group">
-      <label class="form-label" style="font-size:12px;color:#666;display:block;margin-bottom:6px;">Empresa</label>
-      <div id="cd-company" style="color:#ddd;font-size:14px;">—</div>
+    <div class="cd-body">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Candidatos</div>
+          <div class="stat-value" id="cd-stat-cands">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Vagas</div>
+          <div class="stat-value"><span id="cd-stat-jobs-open">0</span>/<span id="cd-stat-jobs-limit">5</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Recrutadores</div>
+          <div class="stat-value">1</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Tickets</div>
+          <div class="stat-value" id="cd-stat-tickets">0</div>
+        </div>
+      </div>
+      <div class="recruiter-card">
+        <div class="recruiter-avatar" id="cd-rec-avatar">—</div>
+        <div class="recruiter-info">
+          <div class="recruiter-name"  id="cd-recruiter-name">—</div>
+          <div class="recruiter-email" id="cd-recruiter-email">—</div>
+        </div>
+        <button class="copy-btn" id="cd-copy-email" data-email="" onclick="copyOrgEmail(this.dataset.email)" title="Copiar email">
+          <i class="ti ti-copy"></i>
+        </button>
+      </div>
+      <div class="plan-section">
+        <div class="plan-header">
+          <div>
+            <div class="plan-label">Plano actual</div>
+            <div class="plan-name" id="cd-plan-name">Starter</div>
+          </div>
+          <button class="btn-secondary" onclick="openChangePlanModal()">Mudar plano</button>
+        </div>
+        <div class="usage-bar-wrap">
+          <div class="usage-label">
+            <span><span id="cd-usage-open">0</span> de <span id="cd-usage-limit">5</span> vagas em uso</span>
+            <span id="cd-usage-pct">0%</span>
+          </div>
+          <div class="usage-bar"><div class="usage-fill" id="cd-usage-fill" style="width:0%"></div></div>
+        </div>
+      </div>
     </div>
-    <div class="form-group">
-      <label class="form-label" style="font-size:12px;color:#666;display:block;margin-bottom:6px;">Nome do recruiter</label>
-      <div id="cd-recruiter-name" style="color:#aaa;font-size:13px;">—</div>
+  </div>
+</div>
+
+<!-- MODAL: MUDAR PLANO -->
+<div class="modal-bg" id="modal-change-plan" onclick="if(event.target===this)closeModal('modal-change-plan')">
+  <div class="modal" style="width:720px;max-width:100%;padding:32px;border-radius:18px;">
+    <div class="modal-header">
+      <div class="modal-title">Mudar plano</div>
+      <button class="modal-close" onclick="closeModal('modal-change-plan')">×</button>
     </div>
-    <div class="form-group">
-      <label class="form-label" style="font-size:12px;color:#666;display:block;margin-bottom:6px;">Email do recruiter</label>
-      <div id="cd-recruiter-email" style="color:#aaa;font-size:13px;">—</div>
-    </div>
-    <div class="form-group">
-      <label class="form-label" style="font-size:12px;color:#666;display:block;margin-bottom:6px;">Candidatos</label>
-      <div id="cd-cands" style="color:#aaa;font-size:13px;">—</div>
-    </div>
-    <div class="form-group">
-      <label class="form-label" style="font-size:12px;color:#666;display:block;margin-bottom:6px;">Criação</label>
-      <div id="cd-created" style="color:#aaa;font-size:13px;">—</div>
-    </div>
-    <div class="form-group" style="margin-bottom:0;">
-      <label class="form-label" style="font-size:12px;color:#666;display:block;margin-bottom:6px;">Pack</label>
-      <select id="cd-plan" class="form-select" onchange="updateOrgPlan(this.dataset.orgId, this.value)" style="width:100%;background:#0d0d0d;border:1px solid #2a2a2a;border-radius:8px;color:#ddd;font-size:13px;padding:10px 12px;">
-        <option value="starter">Starter (5 vagas)</option>
-        <option value="growth">Growth (25 vagas)</option>
-        <option value="pro">Pro (50 vagas)</option>
-      </select>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:24px;">
+      Empresa: <strong id="cp-company" style="color:var(--paper);">—</strong>
+    </p>
+    <div class="plan-cards">
+      <div class="plan-card" data-plan="starter">
+        <div class="plan-card-name">Starter</div>
+        <div class="plan-card-jobs">5</div>
+        <div class="plan-card-jobs-label">vagas em simultâneo</div>
+        <ul class="plan-card-features">
+          <li>5 vagas em simultâneo</li>
+          <li>Candidatos ilimitados</li>
+        </ul>
+        <button class="plan-card-btn" onclick="_pickPlan('starter')">Selecionar</button>
+      </div>
+      <div class="plan-card" data-plan="growth">
+        <div class="plan-card-name">Growth</div>
+        <div class="plan-card-jobs">25</div>
+        <div class="plan-card-jobs-label">vagas em simultâneo</div>
+        <ul class="plan-card-features">
+          <li>25 vagas em simultâneo</li>
+          <li>Candidatos ilimitados</li>
+        </ul>
+        <button class="plan-card-btn" onclick="_pickPlan('growth')">Selecionar</button>
+      </div>
+      <div class="plan-card" data-plan="pro">
+        <div class="plan-card-name">Pro</div>
+        <div class="plan-card-jobs">50</div>
+        <div class="plan-card-jobs-label">vagas em simultâneo</div>
+        <ul class="plan-card-features">
+          <li>50 vagas em simultâneo</li>
+          <li>Candidatos ilimitados</li>
+        </ul>
+        <button class="plan-card-btn" onclick="_pickPlan('pro')">Selecionar</button>
+      </div>
     </div>
   </div>
 </div>
@@ -2307,6 +2428,8 @@ function buildEmailHTML(opts) {
 // 'admin' = full access (default for legacy rows without a role column).
 // 'suporte' = tickets only; view companies but cannot add/remove; no admin management page.
 let CURRENT_ROLE = 'admin';
+// Mirror do rhcportal — keep in sync.
+const PLAN_LIMITS = { starter: 5, growth: 25, pro: 50 };
 let _realtimeChannel      = null;
 let _realtimeRefreshTimer = null;
 let ADMIN = null;
@@ -2488,6 +2611,12 @@ function setupRealtimeSubscriptions() {
       .on('postgres_changes',
           { event: '*', schema: 'public', table: 'organizations' },
           scheduleRefresh)
+      .on('postgres_changes',
+          { event: '*', schema: 'public', table: 'jobs' },
+          scheduleRefresh)
+      .on('postgres_changes',
+          { event: '*', schema: 'public', table: 'tickets' },
+          scheduleRefresh)
       .subscribe();
   } catch(e) { console.warn('Realtime setup failed:', e); }
 }
@@ -2511,20 +2640,11 @@ function teardownRealtimeSubscriptions() {
 function refreshCompanyDetailsIfOpen() {
   const modal = document.getElementById('modal-company-details');
   if(!modal || !modal.classList.contains('open')) return;
-  const planSel = document.getElementById('cd-plan');
-  const orgId = planSel && planSel.dataset.orgId;
+  const orgId = modal.dataset.orgId;
   if(!orgId) return;
   const c = (STATE.companies || []).find(x => x.id === orgId);
   if(!c) { closeModal('modal-company-details'); return; }
-  document.getElementById('cd-title').textContent           = `Detalhes da Empresa: ${c.name || '—'}`;
-  document.getElementById('cd-company').textContent         = c.name || '—';
-  document.getElementById('cd-recruiter-name').textContent  = c.recruiter_name  || '—';
-  document.getElementById('cd-recruiter-email').textContent = c.recruiter_email || '—';
-  document.getElementById('cd-cands').textContent           = String(c.candidateCount || 0);
-  document.getElementById('cd-created').textContent         = c.created_at
-    ? new Date(c.created_at).toLocaleDateString('pt-PT')
-    : '—';
-  if(planSel) planSel.value = c.plan || 'starter';
+  _renderCompanyDetailsBody(c);
 }
 
 // ── DATA ──────────────────────────────────────────
@@ -2532,6 +2652,8 @@ async function loadData() {
   try {
     const orgsRes    = await supa.from('organizations').select('*').order('created_at', { ascending: false });
     const candsRes   = await supa.from('candidates').select('org_id');
+    const jobsRes    = await supa.from('jobs').select('org_id,job_status');
+    const ticketsRes = await supa.from('tickets').select('org_id,status').neq('status','fechado');
     const invitesRes = await supa.from('company_invites').select('*').order('created_at', { ascending: false });
     const adminsRes  = await supa.from('superadmins').select('*').order('created_at', { ascending: false });
 
@@ -2539,6 +2661,8 @@ async function loadData() {
     const errors = [];
     if(orgsRes.error)    errors.push('organizations: ' + orgsRes.error.message);
     if(candsRes.error)   errors.push('candidates: ' + candsRes.error.message);
+    if(jobsRes.error)    errors.push('jobs: ' + jobsRes.error.message);
+    if(ticketsRes.error) errors.push('tickets: ' + ticketsRes.error.message);
     if(invitesRes.error) errors.push('company_invites: ' + invitesRes.error.message);
     if(adminsRes.error)  errors.push('superadmins: ' + adminsRes.error.message);
 
@@ -2550,8 +2674,21 @@ async function loadData() {
 
     const candCount = {};
     (candsRes.data||[]).forEach(c => { candCount[c.org_id] = (candCount[c.org_id]||0) + 1; });
+    const openJobsCount = {};
+    (jobsRes.data||[]).forEach(j => {
+      if(j.job_status !== 'closed' && j.org_id) openJobsCount[j.org_id] = (openJobsCount[j.org_id]||0) + 1;
+    });
+    const openTicketsCount = {};
+    (ticketsRes.data||[]).forEach(t => {
+      if(t.org_id) openTicketsCount[t.org_id] = (openTicketsCount[t.org_id]||0) + 1;
+    });
 
-    STATE.companies = (orgsRes.data||[]).map(o => ({ ...o, candidateCount: candCount[o.id] || 0 }));
+    STATE.companies = (orgsRes.data||[]).map(o => ({
+      ...o,
+      candidateCount:   candCount[o.id]        || 0,
+      openJobsCount:    openJobsCount[o.id]    || 0,
+      openTicketsCount: openTicketsCount[o.id] || 0
+    }));
     STATE.invites   = invitesRes.data || [];
     STATE.admins    = adminsRes.data  || [];
 
@@ -2613,24 +2750,45 @@ function renderCompanies() {
 }
 
 // ── Detalhes da Empresa modal ──
+// Single source of truth — used by openCompanyDetails AND by
+// refreshCompanyDetailsIfOpen (Realtime refresh). Reads STATE.companies[i]
+// which is hydrated by loadData() with candidateCount/openJobsCount/
+// openTicketsCount plus the org row itself.
+function _renderCompanyDetailsBody(c) {
+  const planLimit = PLAN_LIMITS[c.plan] || PLAN_LIMITS.starter;
+  const openJobs  = c.openJobsCount || 0;
+
+  document.getElementById('cd-avatar').textContent  = initials(c.name || '?');
+  document.getElementById('cd-name').textContent    = c.name || '—';
+  document.getElementById('cd-created').textContent = c.created_at
+    ? 'Desde ' + new Date(c.created_at).toLocaleDateString('pt-PT')
+    : '—';
+
+  document.getElementById('cd-stat-cands').textContent      = String(c.candidateCount    || 0);
+  document.getElementById('cd-stat-jobs-open').textContent  = String(openJobs);
+  document.getElementById('cd-stat-jobs-limit').textContent = String(planLimit);
+  document.getElementById('cd-stat-tickets').textContent    = String(c.openTicketsCount  || 0);
+
+  document.getElementById('cd-rec-avatar').textContent      = initials(c.recruiter_name || c.recruiter_email || '?');
+  document.getElementById('cd-recruiter-name').textContent  = c.recruiter_name  || '—';
+  document.getElementById('cd-recruiter-email').textContent = c.recruiter_email || '—';
+  document.getElementById('cd-copy-email').dataset.email    = c.recruiter_email || '';
+
+  const planLabels = { starter:'Starter', growth:'Growth', pro:'Pro' };
+  document.getElementById('cd-plan-name').textContent  = planLabels[c.plan] || 'Starter';
+  document.getElementById('cd-usage-open').textContent  = String(openJobs);
+  document.getElementById('cd-usage-limit').textContent = String(planLimit);
+  const pct = planLimit > 0 ? Math.min(100, Math.round((openJobs / planLimit) * 100)) : 0;
+  document.getElementById('cd-usage-pct').textContent = pct + '%';
+  document.getElementById('cd-usage-fill').style.width = pct + '%';
+
+  document.getElementById('modal-company-details').dataset.orgId = c.id;
+}
+
 async function openCompanyDetails(orgId) {
   const c = (STATE.companies || []).find(x => x.id === orgId);
   if(!c) { showToast('⚠️ Empresa não encontrada'); return; }
-
-  // Denormalized fields populated at registration time + by saveProfile in
-  // rhcportal. For new orgs the modal renders instantly with no network calls.
-  document.getElementById('cd-title').textContent = `Detalhes da Empresa: ${c.name || '—'}`;
-  document.getElementById('cd-company').textContent         = c.name || '—';
-  document.getElementById('cd-recruiter-name').textContent  = c.recruiter_name  || '—';
-  document.getElementById('cd-recruiter-email').textContent = c.recruiter_email || '—';
-  document.getElementById('cd-cands').textContent           = String(c.candidateCount || 0);
-  document.getElementById('cd-created').textContent         = c.created_at
-    ? new Date(c.created_at).toLocaleDateString('pt-PT')
-    : '—';
-  const planSel = document.getElementById('cd-plan');
-  planSel.value = c.plan || 'starter';
-  planSel.dataset.orgId = c.id;
-
+  _renderCompanyDetailsBody(c);
   openModal('modal-company-details');
 
   // Fallback for legacy orgs (created before denormalization) where BOTH
@@ -2646,10 +2804,50 @@ async function openCompanyDetails(orgId) {
       });
       if(!res.ok) return;
       const data = await res.json();
-      if(data && data.name)  document.getElementById('cd-recruiter-name').textContent  = data.name;
-      if(data && data.email) document.getElementById('cd-recruiter-email').textContent = data.email;
+      if(data && data.name) {
+        document.getElementById('cd-recruiter-name').textContent = data.name;
+        document.getElementById('cd-rec-avatar').textContent = initials(data.name);
+      }
+      if(data && data.email) {
+        document.getElementById('cd-recruiter-email').textContent = data.email;
+        document.getElementById('cd-copy-email').dataset.email = data.email;
+      }
     } catch(e) { /* leave the "—" placeholders */ }
   }
+}
+
+// ── Copiar email do recruiter ──
+async function copyOrgEmail(email) {
+  if(!email) return;
+  try { await navigator.clipboard.writeText(email); showToast('✓ Email copiado'); }
+  catch(e) { showToast('⚠️ Falha ao copiar'); }
+}
+
+// ── Modal Mudar Plano — 3 cards Starter/Growth/Pro ──
+function openChangePlanModal() {
+  const modal = document.getElementById('modal-company-details');
+  const orgId = modal && modal.dataset.orgId;
+  if(!orgId) return;
+  const c = (STATE.companies || []).find(x => x.id === orgId);
+  if(!c) return;
+  document.getElementById('cp-company').textContent = c.name || '—';
+  document.querySelectorAll('#modal-change-plan .plan-card').forEach(card => {
+    const isActive = card.dataset.plan === c.plan;
+    card.classList.toggle('active', isActive);
+    const btn = card.querySelector('.plan-card-btn');
+    if(btn) { btn.disabled = isActive; btn.textContent = isActive ? 'Atual' : 'Selecionar'; }
+  });
+  document.getElementById('modal-change-plan').dataset.orgId = orgId;
+  openModal('modal-change-plan');
+}
+
+async function _pickPlan(newPlan) {
+  const orgId = document.getElementById('modal-change-plan')?.dataset.orgId;
+  if(!orgId) return;
+  await updateOrgPlan(orgId, newPlan);   // existing function — NÃO tocada
+  closeModal('modal-change-plan');
+  const c = (STATE.companies || []).find(x => x.id === orgId);
+  if(c) _renderCompanyDetailsBody(c);
 }
 
 async function updateOrgPlan(orgId, newPlan) {
