@@ -1656,18 +1656,36 @@
 .usage-bar { height:6px; background:var(--border); border-radius:3px; overflow:hidden; }
 .usage-fill { height:100%; background:linear-gradient(90deg, var(--accent2), var(--accent)); border-radius:3px; transition:width .3s; }
 
+/* Modal Mudar plano — header, cards (2-step select+confirm), footer */
+.cp-eyebrow { display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--accent); text-transform:uppercase; letter-spacing:.14em; margin-bottom:10px; }
+.cp-eyebrow::before { content:''; width:18px; height:1px; background:var(--accent); display:inline-block; }
+.cp-title { font-family:var(--font-head); font-size:26px; font-weight:700; letter-spacing:-0.4px; color:var(--paper); margin-bottom:8px; }
+.cp-sub { font-size:13px; color:var(--muted); line-height:1.55; margin-bottom:26px; }
+.cp-sub strong { color:var(--paper); }
+
 .plan-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
-.plan-card { background:var(--ink2); border:1px solid var(--border); border-radius:14px; padding:22px 18px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:6px; transition:all .15s; }
-.plan-card.active { border-color:var(--accent); background:linear-gradient(135deg, rgba(0,229,160,.06), rgba(0,229,160,.02)); }
-.plan-card-name { font-family:var(--font-head); font-size:14px; font-weight:700; color:var(--paper); }
-.plan-card-jobs { font-family:var(--font-head); font-size:40px; font-weight:800; color:var(--accent); line-height:1; margin-top:8px; }
-.plan-card-jobs-label { font-size:11px; color:var(--muted); margin-bottom:14px; }
-.plan-card-features { list-style:none; padding:0; margin:0 0 18px; font-size:12px; color:var(--paper); text-align:left; align-self:stretch; }
-.plan-card-features li { padding:4px 0; display:flex; align-items:center; gap:8px; }
-.plan-card-features li::before { content:'✓'; color:var(--accent); font-weight:700; }
-.plan-card-btn { width:100%; background:var(--accent); border:none; border-radius:8px; padding:10px; color:var(--ink); font-weight:600; font-size:13px; cursor:pointer; transition:all .15s; margin-top:auto; }
-.plan-card-btn:hover:not(:disabled) { background:var(--accent2); color:#fff; }
-.plan-card-btn:disabled { background:var(--ink3); color:var(--muted); cursor:not-allowed; border:1px solid var(--border2); }
+.plan-card { position:relative; background:var(--ink2); border:1px solid var(--border); border-radius:14px; padding:24px 18px; text-align:center; display:flex; flex-direction:column; align-items:center; cursor:pointer; transition:all .15s; }
+.plan-card:hover:not(.current):not(.selected) { border-color:var(--border2); transform:translateY(-2px); }
+.plan-card.current { cursor:not-allowed; opacity:.85; }
+.plan-card.selected { border-color:var(--accent); background:linear-gradient(135deg, rgba(0,229,160,.08), rgba(0,229,160,.02)); box-shadow:0 0 0 1px var(--accent), 0 8px 20px rgba(0,229,160,.12); }
+.plan-card-tag { position:absolute; top:-9px; left:50%; transform:translateX(-50%); background:var(--accent); color:var(--ink); font-family:'JetBrains Mono',monospace; font-size:9.5px; font-weight:700; letter-spacing:.1em; padding:3px 10px; border-radius:999px; display:none; }
+.plan-card.current .plan-card-tag { display:inline-block; }
+.plan-card-name { font-family:var(--font-head); font-size:14px; font-weight:700; color:var(--paper); margin-bottom:18px; }
+.plan-card-jobs { font-family:var(--font-head); font-size:54px; font-weight:800; color:var(--accent); line-height:1; }
+.plan-card-jobs-label { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.14em; margin-top:6px; margin-bottom:22px; }
+.plan-card-features { list-style:none; padding:0; margin:0; font-size:12.5px; color:var(--paper); text-align:left; align-self:stretch; }
+.plan-card-features li { padding:5px 0; display:flex; align-items:center; gap:8px; }
+.plan-card-features li i { color:var(--accent); font-size:14px; flex-shrink:0; }
+
+.cp-footer { display:flex; align-items:center; justify-content:space-between; margin-top:24px; padding-top:18px; border-top:1px solid var(--border); gap:14px; }
+.cp-footer-note { font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; }
+.cp-footer-actions { display:flex; gap:10px; }
+.btn-outline { background:transparent; border:1px solid var(--border2); border-radius:8px; padding:9px 16px; font-size:13px; color:var(--paper); cursor:pointer; transition:all .15s; }
+.btn-outline:hover { border-color:var(--accent); color:var(--accent); }
+.btn-confirm { background:var(--accent); border:none; border-radius:8px; padding:9px 18px; color:var(--ink); font-weight:600; font-size:13px; cursor:pointer; transition:all .15s; display:inline-flex; align-items:center; gap:6px; }
+.btn-confirm:hover:not(:disabled) { background:var(--accent2); color:#fff; }
+.btn-confirm:disabled { background:var(--ink3); color:var(--muted); cursor:not-allowed; border:1px solid var(--border2); }
+.btn-confirm i { font-size:14px; }
 
 @media (max-width:600px) {
   .stats-grid { grid-template-columns:repeat(2,1fr); }
@@ -2188,44 +2206,56 @@
 
 <!-- MODAL: MUDAR PLANO -->
 <div class="modal-bg" id="modal-change-plan" onclick="if(event.target===this)closeModal('modal-change-plan')">
-  <div class="modal" style="width:720px;max-width:100%;padding:32px;border-radius:18px;">
-    <div class="modal-header">
-      <div class="modal-title">Mudar plano</div>
-      <button class="modal-close" onclick="closeModal('modal-change-plan')">×</button>
+  <div class="modal" style="width:760px;max-width:100%;padding:32px;border-radius:18px;">
+    <button class="modal-close" onclick="closeModal('modal-change-plan')" style="position:absolute;top:18px;right:18px;">×</button>
+
+    <div class="cp-eyebrow">Mudar plano</div>
+    <div class="cp-title">Escolhe o novo plano</div>
+    <div class="cp-sub">
+      Plano actual: <strong id="cp-current-name">Starter</strong> (<span id="cp-current-limit">5</span> vagas).
+      A mudança é aplicada imediatamente e a próxima factura é ajustada.
     </div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:24px;">
-      Empresa: <strong id="cp-company" style="color:var(--paper);">—</strong>
-    </p>
+
     <div class="plan-cards">
-      <div class="plan-card" data-plan="starter">
+      <div class="plan-card" data-plan="starter" onclick="selectPlan(this)">
+        <div class="plan-card-tag">ACTUAL</div>
         <div class="plan-card-name">Starter</div>
         <div class="plan-card-jobs">5</div>
-        <div class="plan-card-jobs-label">vagas em simultâneo</div>
+        <div class="plan-card-jobs-label">Vagas</div>
         <ul class="plan-card-features">
-          <li>5 vagas em simultâneo</li>
-          <li>Candidatos ilimitados</li>
+          <li><i class="ti ti-check"></i>5 vagas em simultâneo</li>
+          <li><i class="ti ti-check"></i>Candidatos ilimitados</li>
         </ul>
-        <button class="plan-card-btn" onclick="_pickPlan('starter')">Selecionar</button>
       </div>
-      <div class="plan-card" data-plan="growth">
+      <div class="plan-card" data-plan="growth" onclick="selectPlan(this)">
+        <div class="plan-card-tag">ACTUAL</div>
         <div class="plan-card-name">Growth</div>
         <div class="plan-card-jobs">25</div>
-        <div class="plan-card-jobs-label">vagas em simultâneo</div>
+        <div class="plan-card-jobs-label">Vagas</div>
         <ul class="plan-card-features">
-          <li>25 vagas em simultâneo</li>
-          <li>Candidatos ilimitados</li>
+          <li><i class="ti ti-check"></i>25 vagas em simultâneo</li>
+          <li><i class="ti ti-check"></i>Candidatos ilimitados</li>
         </ul>
-        <button class="plan-card-btn" onclick="_pickPlan('growth')">Selecionar</button>
       </div>
-      <div class="plan-card" data-plan="pro">
+      <div class="plan-card" data-plan="pro" onclick="selectPlan(this)">
+        <div class="plan-card-tag">ACTUAL</div>
         <div class="plan-card-name">Pro</div>
         <div class="plan-card-jobs">50</div>
-        <div class="plan-card-jobs-label">vagas em simultâneo</div>
+        <div class="plan-card-jobs-label">Vagas</div>
         <ul class="plan-card-features">
-          <li>50 vagas em simultâneo</li>
-          <li>Candidatos ilimitados</li>
+          <li><i class="ti ti-check"></i>50 vagas em simultâneo</li>
+          <li><i class="ti ti-check"></i>Candidatos ilimitados</li>
         </ul>
-        <button class="plan-card-btn" onclick="_pickPlan('pro')">Selecionar</button>
+      </div>
+    </div>
+
+    <div class="cp-footer">
+      <div class="cp-footer-note">A factura será ajustada.</div>
+      <div class="cp-footer-actions">
+        <button class="btn-outline" onclick="closeModal('modal-change-plan')">Cancelar</button>
+        <button class="btn-confirm" id="cp-confirm-btn" onclick="confirmPlanChange()" disabled>
+          <i class="ti ti-check"></i>Confirmar mudança
+        </button>
       </div>
     </div>
   </div>
@@ -2832,27 +2862,48 @@ async function copyOrgEmail(email) {
   catch(e) { showToast('⚠️ Falha ao copiar'); }
 }
 
-// ── Modal Mudar Plano — 3 cards Starter/Growth/Pro ──
+// ── Modal Mudar Plano — 2-step flow (select card, confirm action) ──
 function openChangePlanModal() {
   const modal = document.getElementById('modal-company-details');
   const orgId = modal && modal.dataset.orgId;
   if(!orgId) return;
   const c = (STATE.companies || []).find(x => x.id === orgId);
   if(!c) return;
-  document.getElementById('cp-company').textContent = c.name || '—';
+  const planLabels = { starter:'Starter', growth:'Growth', pro:'Pro' };
+  document.getElementById('cp-current-name').textContent  = planLabels[c.plan] || 'Starter';
+  document.getElementById('cp-current-limit').textContent = String(PLAN_LIMITS[c.plan] || PLAN_LIMITS.starter);
+  // Mark which card is the current plan (.current = tag visible + cursor not-allowed)
+  // and reset any prior selection (.selected).
   document.querySelectorAll('#modal-change-plan .plan-card').forEach(card => {
-    const isActive = card.dataset.plan === c.plan;
-    card.classList.toggle('active', isActive);
-    const btn = card.querySelector('.plan-card-btn');
-    if(btn) { btn.disabled = isActive; btn.textContent = isActive ? 'Atual' : 'Selecionar'; }
+    card.classList.toggle('current', card.dataset.plan === c.plan);
+    card.classList.remove('selected');
   });
+  const confirmBtn = document.getElementById('cp-confirm-btn');
+  if(confirmBtn) confirmBtn.disabled = true;
   document.getElementById('modal-change-plan').dataset.orgId = orgId;
+  document.getElementById('modal-change-plan').dataset.selectedPlan = '';
   openModal('modal-change-plan');
 }
 
-async function _pickPlan(newPlan) {
-  const orgId = document.getElementById('modal-change-plan')?.dataset.orgId;
-  if(!orgId) return;
+// Step 1: clicking a card. Current plan is ignored (cursor not-allowed).
+function selectPlan(card) {
+  if(!card || card.classList.contains('current')) return;
+  document.querySelectorAll('#modal-change-plan .plan-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  const modal = document.getElementById('modal-change-plan');
+  modal.dataset.selectedPlan = card.dataset.plan || '';
+  const confirmBtn = document.getElementById('cp-confirm-btn');
+  if(confirmBtn) confirmBtn.disabled = !card.dataset.plan;
+}
+
+// Step 2: confirm — only now we hit updateOrgPlan (existing fn, untouched).
+async function confirmPlanChange() {
+  const modal = document.getElementById('modal-change-plan');
+  const orgId       = modal?.dataset.orgId;
+  const newPlan     = modal?.dataset.selectedPlan;
+  if(!orgId || !newPlan) return;
+  const btn = document.getElementById('cp-confirm-btn');
+  if(btn) { btn.disabled = true; }
   await updateOrgPlan(orgId, newPlan);   // existing function — NÃO tocada
   closeModal('modal-change-plan');
   const c = (STATE.companies || []).find(x => x.id === orgId);
