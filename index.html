@@ -69,8 +69,8 @@
     border-radius: 20px; overflow: hidden;
   }
   #auth-page .lg-left {
-    position: relative; padding: 56px 56px 40px; display: flex;
-    flex-direction: column; justify-content: space-between;
+    position: relative; padding: 56px 56px 40px;
+    display: grid; grid-template-rows: auto 1fr auto;
     background:
       radial-gradient(120% 80% at 0% 0%, rgba(0,229,160,.08), transparent 60%),
       radial-gradient(80% 60% at 100% 100%, rgba(0,229,160,.04), transparent 60%),
@@ -90,7 +90,7 @@
     background: rgba(0,229,160,.08); border: 1px solid rgba(0,229,160,.25);
     padding: 4px 10px; border-radius: 999px;
   }
-  #auth-page .lg-hero { margin-top: 60px; }
+  #auth-page .lg-hero { align-self: center; }
   #auth-page .lg-eyebrow {
     font-family: 'JetBrains Mono', ui-monospace, monospace;
     font-size: 11px; font-weight: 600; letter-spacing: .18em;
@@ -123,6 +123,15 @@
     justify-content: center; background: var(--ink2);
   }
   #auth-page .lg-form-box { width: 100%; max-width: 380px; margin: 0 auto; }
+  #auth-page .lg-right-badge {
+    display: inline-block;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10px; font-weight: 600; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--accent);
+    background: rgba(0,229,160,.08); border: 1px solid rgba(0,229,160,.25);
+    padding: 4px 10px; border-radius: 999px;
+    margin-bottom: 18px;
+  }
   #auth-page .lg-form-title {
     font-family: var(--font-head); font-size: 26px; font-weight: 800;
     letter-spacing: -0.02em; color: var(--paper); margin-bottom: 6px;
@@ -167,6 +176,8 @@
     display: flex; align-items: center; justify-content: space-between;
     margin-top: 16px; font-size: 13px;
   }
+  #auth-page .lg-row .lg-forgot { order: 1; }
+  #auth-page .lg-row .lg-secure { order: 2; }
   #auth-page .lg-forgot {
     background: none; border: none; padding: 0; cursor: pointer;
     color: rgba(245,243,239,.65); font-family: var(--font-sans);
@@ -182,8 +193,8 @@
   #auth-page .lg-secure i { color: var(--accent); font-size: 13px; }
   @media (max-width: 880px) {
     #auth-page .lg-split { grid-template-columns: 1fr; min-height: 0; margin: 16px; }
-    #auth-page .lg-left  { padding: 36px 28px 28px; border-right: none; border-bottom: 1px solid var(--border); }
-    #auth-page .lg-hero  { margin-top: 28px; }
+    #auth-page .lg-left  { padding: 36px 28px 28px; border-right: none; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 24px; }
+    #auth-page .lg-hero  { align-self: stretch; }
     #auth-page .lg-headline { font-size: 32px; margin-bottom: 24px; }
     #auth-page .lg-bullets { gap: 10px; }
     #auth-page .lg-foot  { display: none; }
@@ -408,6 +419,7 @@
     </div>
     <div class="lg-right">
       <form class="lg-form-box" onsubmit="event.preventDefault();doLogin();">
+        <div class="lg-right-badge">Admin</div>
         <div class="lg-form-title">Entrar na consola.</div>
         <div class="lg-form-sub">Usa as tuas credenciais de administrador.</div>
         <div class="lg-error" id="auth-error"></div>
