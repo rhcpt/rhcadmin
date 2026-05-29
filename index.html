@@ -61,13 +61,12 @@
 
   /* ── AUTH (split panel) — scoped under #auth-page so the rest of the app
      (which reuses .form-input/.btn-primary etc.) stays untouched. ── */
-  #auth-page { display: flex; padding: 40px 24px; box-sizing: border-box; }
+  #auth-page { display: flex; padding: 0; }
   #auth-page .lg-split {
-    width: 100%; max-width: 1200px; min-height: 600px;
+    width: 100%; min-height: 100vh;
     margin: 0; display: grid; grid-template-columns: 56fr 44fr;
-    background: var(--ink2); border: 1px solid var(--border);
-    border-radius: 20px; overflow: hidden;
-    box-shadow: 0 30px 70px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.02);
+    background: var(--ink2);
+    overflow: hidden;
   }
   #auth-page .lg-left {
     position: relative; padding: 56px 56px 40px;
@@ -98,10 +97,11 @@
     text-transform: uppercase; color: var(--accent); margin-bottom: 18px;
   }
   #auth-page .lg-headline {
-    font-family: var(--font-head); font-size: 44px; font-weight: 800;
-    line-height: 1.05; letter-spacing: -0.025em; color: var(--paper);
+    font-family: var(--font-head); font-size: 48px; font-weight: 800;
+    line-height: 1.02; letter-spacing: -0.03em; color: var(--paper);
     margin-bottom: 36px;
   }
+  #auth-page .lg-headline span { color: var(--accent); font-weight: 800; }
   #auth-page .lg-bullets { list-style: none; padding: 0; display: grid; gap: 14px; }
   #auth-page .lg-bullet {
     display: flex; align-items: center; gap: 12px;
@@ -177,15 +177,15 @@
     display: flex; align-items: center; justify-content: space-between;
     margin-top: 16px; font-size: 13px;
   }
-  #auth-page .lg-row .lg-forgot { order: 1; }
-  #auth-page .lg-row .lg-secure { order: 2; }
+  #auth-page .lg-row .lg-secure { order: 1; }
+  #auth-page .lg-row .lg-forgot { order: 2; }
   #auth-page .lg-forgot {
     background: none; border: none; padding: 0; cursor: pointer;
-    color: rgba(245,243,239,.65); font-family: var(--font-sans);
-    font-size: 13px; text-decoration: none;
-    transition: color .15s;
+    color: var(--accent); font-family: var(--font-sans);
+    font-size: 13px; font-weight: 600; text-decoration: none;
+    transition: color .15s, opacity .15s;
   }
-  #auth-page .lg-forgot:hover { color: var(--accent); text-decoration: underline; }
+  #auth-page .lg-forgot:hover { opacity: .8; text-decoration: underline; }
   #auth-page .lg-secure {
     display: inline-flex; align-items: center; gap: 6px;
     color: var(--muted); font-family: 'JetBrains Mono', ui-monospace, monospace;
@@ -193,8 +193,8 @@
   }
   #auth-page .lg-secure i { color: var(--accent); font-size: 13px; }
   @media (max-width: 880px) {
-    #auth-page { padding: 16px; }
-    #auth-page .lg-split { grid-template-columns: 1fr; min-height: 0; margin: 0; }
+    #auth-page { padding: 0; }
+    #auth-page .lg-split { grid-template-columns: 1fr; min-height: 100vh; margin: 0; }
     #auth-page .lg-left  { padding: 36px 28px 28px; border-right: none; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 24px; }
     #auth-page .lg-hero  { align-self: stretch; }
     #auth-page .lg-headline { font-size: 32px; margin-bottom: 24px; }
@@ -407,7 +407,7 @@
       </div>
       <div class="lg-hero">
         <div class="lg-eyebrow">Consola interna</div>
-        <h1 class="lg-headline">Acesso restrito.</h1>
+        <h1 class="lg-headline">Acesso <span>restrito.</span></h1>
         <ul class="lg-bullets">
           <li class="lg-bullet"><i class="ti ti-building"></i><span>Gerir empresas, planos e acessos</span></li>
           <li class="lg-bullet"><i class="ti ti-shield-lock"></i><span>Apenas membros da equipa RHC</span></li>
