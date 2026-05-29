@@ -26,7 +26,7 @@
   body { background: var(--ink); color: var(--paper); font-family: var(--font-sans); min-height: 100vh; }
 
   /* ── AUTH ── */
-  #auth-page {
+  :is(#auth-page, #admin-reset-page) {
     min-height: 100vh; display: flex; align-items: center; justify-content: center;
     background: var(--ink);
   }
@@ -61,14 +61,14 @@
 
   /* ── AUTH (split panel) — scoped under #auth-page so the rest of the app
      (which reuses .form-input/.btn-primary etc.) stays untouched. ── */
-  #auth-page { display: flex; padding: 0; }
-  #auth-page .lg-split {
+  :is(#auth-page, #admin-reset-page) { display: flex; padding: 0; }
+  :is(#auth-page, #admin-reset-page) .lg-split {
     width: 100%; min-height: 100vh;
     margin: 0; display: grid; grid-template-columns: 56fr 44fr;
     background: var(--ink2);
     overflow: hidden;
   }
-  #auth-page .lg-left {
+  :is(#auth-page, #admin-reset-page) .lg-left {
     position: relative; padding: 56px 56px 40px;
     display: grid; grid-template-rows: auto 1fr auto;
     background:
@@ -77,54 +77,54 @@
       linear-gradient(180deg, #0c0c0c 0%, #0a0a0a 100%);
     border-right: 1px solid var(--border);
   }
-  #auth-page .lg-brand { display: flex; align-items: center; gap: 12px; }
-  #auth-page .lg-brand-mark {
+  :is(#auth-page, #admin-reset-page) .lg-brand { display: flex; align-items: center; gap: 12px; }
+  :is(#auth-page, #admin-reset-page) .lg-brand-mark {
     font-family: var(--font-head); font-size: 22px; font-weight: 800;
     color: var(--paper); letter-spacing: -0.02em;
   }
-  #auth-page .lg-brand-mark span { color: var(--accent); }
-  #auth-page .lg-brand-badge {
+  :is(#auth-page, #admin-reset-page) .lg-brand-mark span { color: var(--accent); }
+  :is(#auth-page, #admin-reset-page) .lg-brand-badge {
     font-family: 'JetBrains Mono', ui-monospace, monospace;
     font-size: 10px; font-weight: 600; letter-spacing: .14em;
     text-transform: uppercase; color: var(--accent);
     background: rgba(0,229,160,.08); border: 1px solid rgba(0,229,160,.25);
     padding: 4px 10px; border-radius: 999px;
   }
-  #auth-page .lg-hero { align-self: center; }
-  #auth-page .lg-eyebrow {
+  :is(#auth-page, #admin-reset-page) .lg-hero { align-self: center; }
+  :is(#auth-page, #admin-reset-page) .lg-eyebrow {
     font-family: 'JetBrains Mono', ui-monospace, monospace;
     font-size: 11px; font-weight: 600; letter-spacing: .18em;
     text-transform: uppercase; color: var(--accent); margin-bottom: 18px;
   }
-  #auth-page .lg-headline {
+  :is(#auth-page, #admin-reset-page) .lg-headline {
     font-family: var(--font-head); font-size: 48px; font-weight: 800;
     line-height: 1.02; letter-spacing: -0.03em; color: var(--paper);
     margin-bottom: 36px;
   }
-  #auth-page .lg-headline span { color: var(--accent); font-weight: 800; }
-  #auth-page .lg-bullets { list-style: none; padding: 0; display: grid; gap: 14px; }
-  #auth-page .lg-bullet {
+  :is(#auth-page, #admin-reset-page) .lg-headline span { color: var(--accent); font-weight: 800; }
+  :is(#auth-page, #admin-reset-page) .lg-bullets { list-style: none; padding: 0; display: grid; gap: 14px; }
+  :is(#auth-page, #admin-reset-page) .lg-bullet {
     display: flex; align-items: center; gap: 12px;
     font-size: 14px; color: rgba(245,243,239,.78);
   }
-  #auth-page .lg-bullet i {
+  :is(#auth-page, #admin-reset-page) .lg-bullet i {
     flex: 0 0 32px; width: 32px; height: 32px;
     display: inline-flex; align-items: center; justify-content: center;
     color: var(--accent); background: rgba(0,229,160,.08);
     border: 1px solid rgba(0,229,160,.22); border-radius: 8px; font-size: 16px;
   }
-  #auth-page .lg-foot {
+  :is(#auth-page, #admin-reset-page) .lg-foot {
     display: flex; align-items: center; justify-content: space-between;
     font-family: 'JetBrains Mono', ui-monospace, monospace;
     font-size: 11px; letter-spacing: .08em; color: var(--muted);
   }
-  #auth-page .lg-foot-status { color: var(--accent); }
-  #auth-page .lg-right {
+  :is(#auth-page, #admin-reset-page) .lg-foot-status { color: var(--accent); }
+  :is(#auth-page, #admin-reset-page) .lg-right {
     padding: 56px 56px 40px; display: flex; flex-direction: column;
     justify-content: center; background: var(--ink2);
   }
-  #auth-page .lg-form-box { width: 100%; max-width: 380px; margin: 0 auto; }
-  #auth-page .lg-right-badge {
+  :is(#auth-page, #admin-reset-page) .lg-form-box { width: 100%; max-width: 380px; margin: 0 auto; }
+  :is(#auth-page, #admin-reset-page) .lg-right-badge {
     display: inline-block;
     font-family: 'JetBrains Mono', ui-monospace, monospace;
     font-size: 10px; font-weight: 600; letter-spacing: .14em;
@@ -133,37 +133,37 @@
     padding: 4px 10px; border-radius: 999px;
     margin-bottom: 18px;
   }
-  #auth-page .lg-form-title {
+  :is(#auth-page, #admin-reset-page) .lg-form-title {
     font-family: var(--font-head); font-size: 26px; font-weight: 800;
     letter-spacing: -0.02em; color: var(--paper); margin-bottom: 6px;
   }
-  #auth-page .lg-form-sub { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
-  #auth-page .lg-error {
+  :is(#auth-page, #admin-reset-page) .lg-form-sub { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
+  :is(#auth-page, #admin-reset-page) .lg-error {
     background: rgba(226,107,107,.08); border: 1px solid rgba(226,107,107,.28);
     border-radius: 8px; padding: 10px 14px; font-size: 13px; color: var(--red);
     margin-bottom: 16px; display: none;
   }
-  #auth-page .lg-input-group { margin-bottom: 16px; }
-  #auth-page .lg-label {
+  :is(#auth-page, #admin-reset-page) .lg-input-group { margin-bottom: 16px; }
+  :is(#auth-page, #admin-reset-page) .lg-label {
     display: block; font-family: 'JetBrains Mono', ui-monospace, monospace;
     font-size: 10px; font-weight: 600; letter-spacing: .14em;
     text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
   }
-  #auth-page .lg-input {
+  :is(#auth-page, #admin-reset-page) .lg-input {
     width: 100%; background: #0d0d0d; border: 1px solid var(--border2);
     border-radius: 10px; padding: 13px 14px; font-size: 14px; color: var(--paper);
     font-family: var(--font-sans); transition: border-color .15s, background .15s;
   }
-  #auth-page .lg-input:focus { outline: none; border-color: var(--accent); background: #0f0f0f; }
-  #auth-page .lg-pass-wrap { position: relative; }
-  #auth-page .lg-eye {
+  :is(#auth-page, #admin-reset-page) .lg-input:focus { outline: none; border-color: var(--accent); background: #0f0f0f; }
+  :is(#auth-page, #admin-reset-page) .lg-pass-wrap { position: relative; }
+  :is(#auth-page, #admin-reset-page) .lg-eye {
     position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
     background: none; border: none; cursor: pointer;
     color: rgba(245,243,239,.55); padding: 6px; border-radius: 6px;
     display: inline-flex; align-items: center; justify-content: center;
   }
-  #auth-page .lg-eye:hover { color: var(--paper); background: rgba(255,255,255,.04); }
-  #auth-page .lg-btn {
+  :is(#auth-page, #admin-reset-page) .lg-eye:hover { color: var(--paper); background: rgba(255,255,255,.04); }
+  :is(#auth-page, #admin-reset-page) .lg-btn {
     width: 100%; background: var(--accent); color: var(--ink); border: none;
     border-radius: 10px; padding: 14px; font-size: 14px; font-weight: 700;
     font-family: var(--font-head); letter-spacing: .01em;
@@ -171,36 +171,47 @@
     display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     margin-top: 8px;
   }
-  #auth-page .lg-btn:hover { background: var(--accent2); }
-  #auth-page .lg-btn:active { transform: translateY(1px); }
-  #auth-page .lg-row {
+  :is(#auth-page, #admin-reset-page) .lg-btn:hover { background: var(--accent2); }
+  :is(#auth-page, #admin-reset-page) .lg-btn:active { transform: translateY(1px); }
+  :is(#auth-page, #admin-reset-page) .lg-row {
     display: flex; align-items: center; justify-content: space-between;
     margin-top: 16px; font-size: 13px;
   }
-  #auth-page .lg-row .lg-secure { order: 1; }
-  #auth-page .lg-row .lg-forgot { order: 2; }
-  #auth-page .lg-forgot {
+  :is(#auth-page, #admin-reset-page) .lg-row .lg-secure { order: 1; }
+  :is(#auth-page, #admin-reset-page) .lg-row .lg-forgot { order: 2; }
+  :is(#auth-page, #admin-reset-page) .lg-forgot {
     background: none; border: none; padding: 0; cursor: pointer;
     color: var(--accent); font-family: var(--font-sans);
     font-size: 13px; font-weight: 600; text-decoration: none;
     transition: color .15s, opacity .15s;
   }
-  #auth-page .lg-forgot:hover { opacity: .8; text-decoration: underline; }
-  #auth-page .lg-secure {
+  :is(#auth-page, #admin-reset-page) .lg-forgot:hover { opacity: .8; text-decoration: underline; }
+  :is(#auth-page, #admin-reset-page) .lg-secure {
     display: inline-flex; align-items: center; gap: 6px;
     color: var(--muted); font-family: 'JetBrains Mono', ui-monospace, monospace;
     font-size: 11px; letter-spacing: .08em;
   }
-  #auth-page .lg-secure i { color: var(--accent); font-size: 13px; }
+  :is(#auth-page, #admin-reset-page) .lg-secure i { color: var(--accent); font-size: 13px; }
   @media (max-width: 880px) {
-    #auth-page { padding: 0; }
-    #auth-page .lg-split { grid-template-columns: 1fr; min-height: 100vh; margin: 0; }
-    #auth-page .lg-left  { padding: 36px 28px 28px; border-right: none; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 24px; }
-    #auth-page .lg-hero  { align-self: stretch; }
-    #auth-page .lg-headline { font-size: 32px; margin-bottom: 24px; }
-    #auth-page .lg-bullets { gap: 10px; }
-    #auth-page .lg-foot  { display: none; }
-    #auth-page .lg-right { padding: 32px 28px 36px; }
+    :is(#auth-page, #admin-reset-page) { padding: 0; }
+    :is(#auth-page, #admin-reset-page) .lg-split { grid-template-columns: 1fr; min-height: 100vh; margin: 0; }
+    :is(#auth-page, #admin-reset-page) .lg-left  { padding: 36px 28px 28px; border-right: none; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 24px; }
+    :is(#auth-page, #admin-reset-page) .lg-hero  { align-self: stretch; }
+    :is(#auth-page, #admin-reset-page) .lg-headline { font-size: 32px; margin-bottom: 24px; }
+    :is(#auth-page, #admin-reset-page) .lg-bullets { gap: 10px; }
+    :is(#auth-page, #admin-reset-page) .lg-foot  { display: none; }
+    :is(#auth-page, #admin-reset-page) .lg-right { padding: 32px 28px 36px; }
+  }
+  /* Success banner shown on the login page only after ?reset_success=1. */
+  #auth-page .lg-success-banner {
+    display: none;
+    background: rgba(0,229,160,.08);
+    border: 1px solid rgba(0,229,160,.25);
+    color: var(--accent);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    margin-bottom: 18px;
   }
 
   /* ── MAIN ── */
@@ -421,6 +432,7 @@
     </div>
     <div class="lg-right">
       <form class="lg-form-box" onsubmit="event.preventDefault();doLogin();">
+        <div class="lg-success-banner" id="lg-success-banner">✓ Palavra-passe alterada com sucesso. Podes fazer login.</div>
         <div class="lg-right-badge">Admin</div>
         <div class="lg-form-title">Entrar na consola.</div>
         <div class="lg-form-sub">Usa as tuas credenciais de administrador.</div>
@@ -440,10 +452,84 @@
         </div>
         <button type="submit" class="lg-btn">Entrar <i class="ti ti-arrow-right"></i></button>
         <div class="lg-row">
-          <button type="button" class="lg-forgot" id="lg-forgot-btn" onclick="showToast('Em breve')" title="Em breve">Esqueci-me da palavra-passe</button>
+          <button type="button" class="lg-forgot" id="lg-forgot-btn" onclick="openForgotModalAdmin()">Esqueci-me da palavra-passe</button>
           <span class="lg-secure"><i class="ti ti-lock"></i>Ligação segura</span>
         </div>
       </form>
+    </div>
+  </div>
+</div>
+
+<!-- RESET PASSWORD (shown when ?reset=1 or hash carries a Supabase recovery token) -->
+<div id="admin-reset-page" style="display:none;">
+  <div class="lg-split">
+    <div class="lg-left">
+      <div class="lg-brand">
+        <div class="lg-brand-mark">RH<span>C</span></div>
+        <div class="lg-brand-badge">Admin</div>
+      </div>
+      <div class="lg-hero">
+        <div class="lg-eyebrow">Recuperação</div>
+        <h1 class="lg-headline">Quase <span>lá.</span></h1>
+        <ul class="lg-bullets">
+          <li class="lg-bullet"><i class="ti ti-key"></i><span>Define a tua nova palavra-passe</span></li>
+          <li class="lg-bullet"><i class="ti ti-shield-check"></i><span>Mínimo 6 caracteres</span></li>
+          <li class="lg-bullet"><i class="ti ti-login"></i><span>Vais voltar ao login após confirmar</span></li>
+        </ul>
+      </div>
+      <div class="lg-foot">
+        <span class="lg-foot-status">● Sessão de recuperação</span>
+        <span>admin.rhc.pt</span>
+      </div>
+    </div>
+    <div class="lg-right">
+      <form class="lg-form-box" onsubmit="event.preventDefault();doResetPasswordAdmin();">
+        <div class="lg-right-badge">Admin</div>
+        <div class="lg-form-title">Nova palavra-passe.</div>
+        <div class="lg-form-sub">Escolhe uma palavra-passe segura.</div>
+        <div class="lg-error" id="reset-error-admin"></div>
+        <div class="lg-input-group">
+          <label class="lg-label" for="reset-pass1-admin">Nova palavra-passe</label>
+          <input class="lg-input" id="reset-pass1-admin" type="password" placeholder="••••••••" autocomplete="new-password" />
+        </div>
+        <div class="lg-input-group">
+          <label class="lg-label" for="reset-pass2-admin">Confirmar palavra-passe</label>
+          <input class="lg-input" id="reset-pass2-admin" type="password" placeholder="••••••••" autocomplete="new-password" />
+        </div>
+        <button type="submit" class="lg-btn" id="btn-reset-admin">Alterar palavra-passe <i class="ti ti-arrow-right"></i></button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- FORGOT PASSWORD popup — triggered from #lg-forgot-btn on the login page -->
+<div class="modal-bg" id="modal-forgot-admin" onclick="if(event.target===this)closeForgotModalAdmin()">
+  <div class="modal" style="width:420px;max-width:100%;text-align:center;padding:36px;border-radius:18px;">
+    <div class="modal-header" style="border:none;justify-content:space-between;margin-bottom:14px;">
+      <div class="modal-title" style="font-family:var(--font-head);font-size:22px;font-weight:700;letter-spacing:-0.4px;">Recuperar palavra-passe</div>
+      <button class="modal-close" onclick="closeForgotModalAdmin()">×</button>
+    </div>
+    <div id="forgot-fields-admin">
+      <div style="width:54px;height:54px;border-radius:50%;background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.25);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 14px;"><i class="ti ti-mail-fast"></i></div>
+      <p style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:18px;">Indica o teu email e enviamos-te um link para criares uma nova palavra-passe.</p>
+      <div class="form-group" style="text-align:left;">
+        <label class="form-label">Email</label>
+        <input class="form-input" id="forgot-email-admin" type="email" placeholder="nome@rhc.pt" onkeydown="if(event.key==='Enter')sendResetEmailAdmin()" />
+      </div>
+      <div id="forgot-error-admin" style="display:none;font-size:12px;color:var(--red);margin-bottom:10px;padding:8px 12px;background:rgba(226,107,107,.08);border-radius:6px;border:1px solid rgba(226,107,107,.2);text-align:left;"></div>
+      <button class="btn-primary" id="btn-forgot-admin" onclick="sendResetEmailAdmin()" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;">
+        <span id="btn-forgot-admin-text">Enviar link de recuperação</span>
+        <i class="ti ti-arrow-right"></i>
+      </button>
+      <div style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:14px;">
+        Não recebes o email em poucos minutos? Verifica a pasta de spam.
+      </div>
+    </div>
+    <div id="forgot-success-admin" style="display:none;text-align:center;padding:8px 0;">
+      <div style="width:54px;height:54px;border-radius:50%;background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.25);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 14px;"><i class="ti ti-check"></i></div>
+      <div style="font-family:var(--font-head);font-size:20px;font-weight:700;letter-spacing:-0.4px;color:var(--paper);margin-bottom:10px;">Email enviado</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.5;padding:0 12px;">Se existir conta com esse email, vais receber um link de recuperação em breve.</div>
+      <button class="btn-primary" onclick="closeForgotModalAdmin()" style="margin-top:20px;">← Voltar ao login</button>
     </div>
   </div>
 </div>
@@ -2706,6 +2792,134 @@ function showAuthErr(msg) {
   const el = document.getElementById('auth-error');
   el.textContent = msg; el.style.display = 'block';
 }
+
+// ── FORGOT PASSWORD (FASE 2) ──────────────────────────────────────
+// Anti-enumeration: always swap to the generic success state, even when
+// resetPasswordForEmail returns an error, so we don't leak which addresses
+// have an account. There is no Turnstile here — the admin is internal,
+// and Supabase Auth already rate-limits resetPasswordForEmail per-IP.
+function openForgotModalAdmin() {
+  const modal = document.getElementById('modal-forgot-admin');
+  if(!modal) return;
+  const fields  = document.getElementById('forgot-fields-admin');
+  const success = document.getElementById('forgot-success-admin');
+  const errEl   = document.getElementById('forgot-error-admin');
+  const emailEl = document.getElementById('forgot-email-admin');
+  const btn     = document.getElementById('btn-forgot-admin');
+  const btnTxt  = document.getElementById('btn-forgot-admin-text');
+  if(fields)  fields.style.display  = 'block';
+  if(success) success.style.display = 'none';
+  if(errEl)   { errEl.textContent = ''; errEl.style.display = 'none'; }
+  if(emailEl) emailEl.value = '';
+  if(btn)     btn.disabled = false;
+  if(btnTxt)  btnTxt.textContent = 'Enviar link de recuperação';
+  modal.classList.add('open');
+  setTimeout(() => emailEl && emailEl.focus(), 50);
+}
+
+function closeForgotModalAdmin() {
+  const modal = document.getElementById('modal-forgot-admin');
+  if(modal) modal.classList.remove('open');
+}
+
+async function sendResetEmailAdmin() {
+  const emailEl = document.getElementById('forgot-email-admin');
+  const errEl   = document.getElementById('forgot-error-admin');
+  const fields  = document.getElementById('forgot-fields-admin');
+  const success = document.getElementById('forgot-success-admin');
+  const btn     = document.getElementById('btn-forgot-admin');
+  const btnTxt  = document.getElementById('btn-forgot-admin-text');
+  if(errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
+  const email = (emailEl?.value || '').trim().toLowerCase();
+  if(!email || !email.includes('@')) {
+    if(errEl) { errEl.textContent = 'Insere um email válido.'; errEl.style.display = 'block'; }
+    return;
+  }
+  if(btn)    btn.disabled = true;
+  if(btnTxt) btnTxt.textContent = 'A enviar...';
+  try {
+    // Hardcoded to the canonical admin domain so it matches the Supabase
+    // "Additional Redirect URLs" allowlist exactly (must be added manually
+    // in the Supabase dashboard).
+    const redirectTo = 'https://admin.rhc.pt/?reset=1';
+    const { error } = await supa.auth.resetPasswordForEmail(email, { redirectTo });
+    if(error) console.warn('[forgot-admin] resetPasswordForEmail failed:', error.message);
+  } catch(e) {
+    console.warn('[forgot-admin] threw:', e && e.message);
+  }
+  // Always show the generic success — anti-enumeration.
+  if(fields)  fields.style.display  = 'none';
+  if(success) success.style.display = 'block';
+  if(btn)    btn.disabled = false;
+  if(btnTxt) btnTxt.textContent = 'Enviar link de recuperação';
+}
+
+async function doResetPasswordAdmin() {
+  // The Supabase SDK auto-consumes the access_token from the URL hash on
+  // page load (type=recovery), which sets a one-shot recovery session in
+  // sessionStorage. updateUser({password}) runs against that session — we
+  // never see or pass the token explicitly.
+  const p1El   = document.getElementById('reset-pass1-admin');
+  const p2El   = document.getElementById('reset-pass2-admin');
+  const errEl  = document.getElementById('reset-error-admin');
+  const btn    = document.getElementById('btn-reset-admin');
+  const pass1  = p1El?.value || '';
+  const pass2  = p2El?.value || '';
+  if(errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
+  if(pass1.length < 6) {
+    if(errEl) { errEl.textContent = 'A palavra-passe deve ter pelo menos 6 caracteres.'; errEl.style.display = 'block'; }
+    return;
+  }
+  if(pass1 !== pass2) {
+    if(errEl) { errEl.textContent = 'As palavras-passe não coincidem.'; errEl.style.display = 'block'; }
+    return;
+  }
+  if(btn) { btn.disabled = true; btn.textContent = 'A alterar...'; }
+  try {
+    const { error } = await supa.auth.updateUser({ password: pass1 });
+    if(error) {
+      const raw = String(error.message || '').toLowerCase();
+      let userMsg;
+      if (raw.includes('different from') || raw.includes('same as') || raw.includes('same password') || raw.includes('should be different')) {
+        userMsg = 'A nova palavra-passe não pode ser igual à anterior.';
+      } else if (raw.includes('weak') || raw.includes('should be at least') || raw.includes('strength') || raw.includes('characters')) {
+        userMsg = 'Palavra-passe demasiado fraca. Usa pelo menos 6 caracteres.';
+      } else {
+        userMsg = 'Link inválido ou expirado. Pede um novo.';
+      }
+      if(errEl) { errEl.textContent = userMsg; errEl.style.display = 'block'; }
+      if(btn) { btn.disabled = false; btn.innerHTML = 'Alterar palavra-passe <i class="ti ti-arrow-right"></i>'; }
+      return;
+    }
+    // Force a clean re-login with the new password.
+    try { _explicitLogout = true; await supa.auth.signOut(); } catch(_) {}
+    window.location.href = window.location.pathname + '?reset_success=1';
+  } catch(e) {
+    if(errEl) { errEl.textContent = 'Erro ao alterar. Tenta novamente.'; errEl.style.display = 'block'; }
+    if(btn) { btn.disabled = false; btn.innerHTML = 'Alterar palavra-passe <i class="ti ti-arrow-right"></i>'; }
+  }
+}
+
+// Initial URL routing. Runs synchronously when the script parses — the
+// auth gate isn't reached until after this block, so we can safely flip
+// which page is visible before onAuthStateChange does anything.
+(function _adminInitResetRouting(){
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const resetFlag = params.get('reset') === '1';
+    const resetOK   = params.get('reset_success') === '1';
+    const hashRec   = (window.location.hash || '').includes('type=recovery');
+    if(resetFlag || hashRec) {
+      const auth = document.getElementById('auth-page');
+      const rst  = document.getElementById('admin-reset-page');
+      if(auth) auth.style.display = 'none';
+      if(rst)  rst.style.display  = 'flex';
+    } else if(resetOK) {
+      const banner = document.getElementById('lg-success-banner');
+      if(banner) banner.style.display = 'block';
+    }
+  } catch(e) { console.warn('[admin init reset routing]', e && e.message); }
+})();
 
 async function doLogout() {
   // Suppress the "session expired" toast that onAuthStateChange would
