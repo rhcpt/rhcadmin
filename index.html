@@ -2782,6 +2782,8 @@ async function doLogin() {
     }
 
     ADMIN = profile;
+    const _firstName = (ADMIN.name || ADMIN.email.split('@')[0]).split(' ')[0];
+    showToast('✓ Bem-vindo, ' + _firstName, { success: true });
     enterAdmin();
   } catch(e) {
     showAuthErr('Erro de ligação. Tenta novamente.');
