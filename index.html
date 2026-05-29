@@ -61,12 +61,13 @@
 
   /* ── AUTH (split panel) — scoped under #auth-page so the rest of the app
      (which reuses .form-input/.btn-primary etc.) stays untouched. ── */
-  #auth-page { display: flex; }
+  #auth-page { display: flex; padding: 40px 24px; box-sizing: border-box; }
   #auth-page .lg-split {
-    width: 100%; max-width: 1200px; min-height: min(720px, 92vh);
-    margin: 0 24px; display: grid; grid-template-columns: 56fr 44fr;
+    width: 100%; max-width: 1200px; min-height: 600px;
+    margin: 0; display: grid; grid-template-columns: 56fr 44fr;
     background: var(--ink2); border: 1px solid var(--border);
     border-radius: 20px; overflow: hidden;
+    box-shadow: 0 30px 70px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.02);
   }
   #auth-page .lg-left {
     position: relative; padding: 56px 56px 40px;
@@ -192,7 +193,8 @@
   }
   #auth-page .lg-secure i { color: var(--accent); font-size: 13px; }
   @media (max-width: 880px) {
-    #auth-page .lg-split { grid-template-columns: 1fr; min-height: 0; margin: 16px; }
+    #auth-page { padding: 16px; }
+    #auth-page .lg-split { grid-template-columns: 1fr; min-height: 0; margin: 0; }
     #auth-page .lg-left  { padding: 36px 28px 28px; border-right: none; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 24px; }
     #auth-page .lg-hero  { align-self: stretch; }
     #auth-page .lg-headline { font-size: 32px; margin-bottom: 24px; }
