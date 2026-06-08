@@ -944,7 +944,8 @@
   #marketing-area .mk-post-card.cat-gdpr { --bar-color: var(--mk-cat-gdpr); }
   #marketing-area .mk-post-card.cat-product_updates { --bar-color: var(--mk-cat-prod); }
   #marketing-area .mk-post-delete,
-  #marketing-area .mk-post-edit {
+  #marketing-area .mk-post-edit,
+  #marketing-area .mk-post-translate {
     position: absolute; top: 8px; z-index: 2;
     width: 28px; height: 28px; border-radius: 6px;
     background: transparent; border: 1px solid transparent;
@@ -952,22 +953,26 @@
     display: inline-flex; align-items: center; justify-content: center;
     cursor: pointer; opacity: 0; transition: opacity .12s, background .12s, color .12s, border-color .12s;
   }
-  #marketing-area .mk-post-delete { right: 8px; }
-  #marketing-area .mk-post-edit   { right: 42px; }
+  #marketing-area .mk-post-delete    { right: 8px;  }
+  #marketing-area .mk-post-edit      { right: 42px; }
+  #marketing-area .mk-post-translate { right: 76px; }
   #marketing-area .mk-post-card:hover .mk-post-delete,
-  #marketing-area .mk-post-card:hover .mk-post-edit { opacity: 1; }
+  #marketing-area .mk-post-card:hover .mk-post-edit,
+  #marketing-area .mk-post-card:hover .mk-post-translate { opacity: 1; }
   #marketing-area .mk-post-delete:hover {
     background: rgba(226,107,107,.12);
     border-color: rgba(226,107,107,.32);
     color: var(--red);
   }
-  #marketing-area .mk-post-edit:hover {
+  #marketing-area .mk-post-edit:hover,
+  #marketing-area .mk-post-translate:hover {
     background: var(--mk-accent-soft, rgba(0,229,160,.12));
     border-color: rgba(0,229,160,.32);
     color: var(--accent);
   }
   #marketing-area .mk-post-delete i,
-  #marketing-area .mk-post-edit i { font-size: 15px; }
+  #marketing-area .mk-post-edit i,
+  #marketing-area .mk-post-translate i { font-size: 15px; }
   #marketing-area .mk-post-thumb {
     width: 84px; height: 84px; border-radius: var(--mk-radius-md);
     flex-shrink: 0; overflow: hidden; position: relative;
@@ -2231,11 +2236,6 @@
                   <option value="published">Publicado</option>
                   <option value="archived">Arquivado</option>
                 </select>
-                <p class="mk-panel-label" style="margin: 12px 0 8px;"><i class="ti ti-language"></i>Língua</p>
-                <div class="mk-segmented" id="mk-lang-seg">
-                  <button class="mk-seg-btn active" data-lang="pt">PT</button>
-                  <button class="mk-seg-btn" data-lang="en">EN</button>
-                </div>
               </div>
 
               <div class="mk-panel-card">
@@ -4658,41 +4658,6 @@ function _mkWireBlog() {
     document.getElementById('mk-status-badge').className = 'mk-badge ' + $statusSel.value;
   };
 
-  // Language segmented — bilingual editor mirror-and-swap. Snapshot
-  // the four visible inputs into the OLD lang slot, flip activeLang +
-  // the .active class, restore from the NEW lang slot, refresh
-  // counters and toggle the EN-mode banner. Switching language alone
-  // is NOT a content edit so _markDirty() is intentionally NOT called
-  // — the input handlers fire on the next keystroke if there's a
-  // real edit.
-  document.querySelectorAll('#marketing-area #mk-lang-seg .mk-seg-btn').forEach(b => {
-    b.onclick = () => {
-      const newLang = b.dataset.lang;
-      if(newLang === MK_STATE.activeLang) return;
-      const old = MK_STATE.activeLang;
-      // Snapshot visible → draft[old]
-      MK_STATE.draft['title_' + old]            = document.getElementById('mk-edit-title').value;
-      MK_STATE.draft['subtitle_' + old]         = document.getElementById('mk-edit-subtitle').value;
-      MK_STATE.draft['content_' + old]          = document.getElementById('mk-edit-body').innerHTML;
-      MK_STATE.draft['meta_description_' + old] = document.getElementById('mk-meta-desc').value;
-      // Flip activeLang + UI active state
-      MK_STATE.activeLang = newLang;
-      document.querySelectorAll('#marketing-area #mk-lang-seg .mk-seg-btn').forEach(x => x.classList.remove('active'));
-      b.classList.add('active');
-      // Restore draft[new] → visible
-      document.getElementById('mk-edit-title').value     = MK_STATE.draft['title_' + newLang]            || '';
-      document.getElementById('mk-edit-subtitle').value  = MK_STATE.draft['subtitle_' + newLang]         || '';
-      document.getElementById('mk-edit-body').innerHTML  = MK_STATE.draft['content_' + newLang]          || '';
-      document.getElementById('mk-meta-desc').value      = MK_STATE.draft['meta_description_' + newLang] || '';
-      // Refresh derived UI bound to whichever lang is now visible +
-      // show/hide the EN-mode banner.
-      _mkUpdateWordCount();
-      _mkUpdateMetaCounter();
-      _mkUpdateSEOPreview();
-      _mkRenderLangBanner(newLang);
-    };
-  });
-
   // Category picker
   document.querySelectorAll('#marketing-area #mk-cat-grid .mk-cat-pick').forEach(b => {
     b.onclick = () => {
@@ -4866,11 +4831,15 @@ function _mkRenderPosts() {
     const thumb = p.featured_image_url
       ? `<div class="mk-post-thumb"><img src="${_mkEscapeHtml(p.featured_image_url)}" alt=""></div>`
       : `<div class="mk-post-thumb placeholder"><i class="ti ti-photo"></i></div>`;
-    const delTitle  = _isEN ? 'Delete post' : 'Apagar post';
-    const editTitle = _isEN ? 'Edit post'   : 'Editar post';
+    const delTitle   = _isEN ? 'Delete post'        : 'Apagar post';
+    const editTitle  = _isEN ? 'Edit post'          : 'Editar post';
+    const transTitle = hasEN
+      ? (_isEN ? 'Edit English version'  : 'Editar versão inglesa')
+      : (_isEN ? 'Translate to English'  : 'Traduzir para inglês');
     return `
       <div class="mk-post-card ${catClass}" data-id="${_mkEscapeHtml(p.id)}">
         <div class="accent-bar"></div>
+        <button class="mk-post-translate" type="button" data-trans-id="${_mkEscapeHtml(p.id)}" title="${transTitle}" aria-label="${transTitle}"><i class="ti ti-language"></i></button>
         <button class="mk-post-edit" type="button" data-edit-id="${_mkEscapeHtml(p.id)}" title="${editTitle}" aria-label="${editTitle}"><i class="ti ti-pencil"></i></button>
         <button class="mk-post-delete" type="button" data-del-id="${_mkEscapeHtml(p.id)}" title="${delTitle}" aria-label="${delTitle}"><i class="ti ti-trash"></i></button>
         ${thumb}
@@ -4905,15 +4874,23 @@ function _mkRenderPosts() {
   list.querySelectorAll('.mk-post-edit').forEach(btn => {
     btn.onclick = (e) => { e.stopPropagation(); _mkOpenEditor(btn.dataset.editId); };
   });
+  // Translate icon — opens the editor in EN-edit mode. Same shape as
+  // the edit pencil, only the lang differs. stopPropagation so the
+  // card's default PT-open onclick doesn't also fire.
+  list.querySelectorAll('.mk-post-translate').forEach(btn => {
+    btn.onclick = (e) => { e.stopPropagation(); _mkOpenEditor(btn.dataset.transId, { lang: 'en' }); };
+  });
 }
 
-function _mkOpenEditor(postId) {
+function _mkOpenEditor(postId, opts) {
   if(MK_STATE.dirty && !confirm('Tens alterações não guardadas. Sair sem guardar?')) return;
   MK_STATE.dirty = false;
   MK_STATE.current = postId ? MK_STATE.posts.find(p => p.id === postId) : null;
-  // The editor always opens in PT; the in-editor segmented PT/EN lets
-  // the user switch to the EN slot from inside.
-  MK_STATE.activeLang = 'pt';
+  // Editor has no in-editor language switch: the mode is decided by
+  // the caller. Normal opens (Novo post, card body click, edit
+  // pencil) come in without opts → PT. The translate icon on the
+  // list passes { lang: 'en' } to open straight into the EN slot.
+  MK_STATE.activeLang = (opts && opts.lang === 'en') ? 'en' : 'pt';
   _mkFillEditor(MK_STATE.current);
   _mkShowView('mk-editor-view');
 }
@@ -5002,10 +4979,6 @@ function _mkFillEditor(p) {
   // Featured image
   _mkRenderFeatured(p?.featured_image_url || null);
 
-  // Language segmented — reflect activeLang on the side-panel pills.
-  document.querySelectorAll('#marketing-area #mk-lang-seg .mk-seg-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.lang === _a);
-  });
   // EN-mode banner — visible only while editing the EN slot.
   _mkRenderLangBanner(_a);
 
