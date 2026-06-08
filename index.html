@@ -79,7 +79,7 @@
     overflow: hidden;
   }
   :is(#auth-page, #admin-reset-page) .lg-net { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
-  :is(#auth-page, #admin-reset-page) .lg-left > * { position: relative; z-index: 1; }
+  :is(#auth-page, #admin-reset-page) .lg-left > *:not(.lg-net) { position: relative; z-index: 1; }
   :is(#auth-page, #admin-reset-page) .lg-brand { display: flex; align-items: center; gap: 12px; }
   :is(#auth-page, #admin-reset-page) .lg-brand-mark {
     font-family: var(--font-head); font-size: 22px; font-weight: 800;
