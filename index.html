@@ -5196,7 +5196,13 @@ async function _mkPublishPost() {
   document.getElementById('mk-status-badge').textContent = 'Publicado';
   document.getElementById('mk-status-badge').className = 'mk-badge published';
   _mkRenderStats();
-  alert('Post publicado. Aparece em rhc.pt/blog quando a Fase 4 for aplicada.');
+  // Re-render the list so the just-published card flips to the green
+  // "Publicado" badge, then jump back to the list view and confirm
+  // with a green toast. No more "Fase 4" internal jargon.
+  _mkRenderPosts();
+  _mkShowView('mk-list-view');
+  const isEN = (document.documentElement.lang || 'pt') === 'en';
+  showToast(isEN ? '✓ Article published' : '✓ Artigo publicado', { success: true });
 }
 
 function _mkRenderFeatured(url) {
