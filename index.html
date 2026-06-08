@@ -980,6 +980,17 @@
   #marketing-area .mk-badge.published { background: var(--mk-success-soft); color: var(--mk-success); }
   #marketing-area .mk-badge.draft { background: var(--mk-warn-soft); color: var(--mk-warn-ink); }
   #marketing-area .mk-badge.archived { background: var(--mk-bg-tertiary); color: var(--mk-text-secondary); }
+  /* PT/EN language chips on the post card — informational only (not
+     clickable yet). Same pill size as .mk-badge but without the dot
+     prefix, so PT/EN read clean as 2-char labels. */
+  #marketing-area .mk-lang-chip {
+    font-size: 10px; font-weight: 700; padding: 2px 7px;
+    border-radius: 100px; letter-spacing: 0.06em;
+    display: inline-flex; align-items: center;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  #marketing-area .mk-lang-chip.on  { background: var(--mk-accent-soft, rgba(0,229,160,.12)); color: var(--accent); border: 1px solid rgba(0,229,160,.28); }
+  #marketing-area .mk-lang-chip.off { background: var(--mk-bg-tertiary); color: var(--mk-text-tertiary); border: 1px solid var(--mk-border-secondary); }
   #marketing-area .mk-post-title {
     font-size: 14.5px; font-weight: 600; color: var(--mk-text-primary);
     line-height: 1.3; margin: 0 0 4px;
@@ -4726,7 +4737,7 @@ async function _mkLoadPosts() {
   try {
     const { data, error } = await supa
       .from('blog_posts')
-      .select('id,title,subtitle,slug,status,language,category,tags,featured_image_url,views,published_at,created_at,updated_at,author_name,content,meta_description')
+      .select('id,title,subtitle,slug,status,language,category,tags,featured_image_url,views,published_at,created_at,updated_at,author_name,content,meta_description,title_pt,title_en,subtitle_pt,subtitle_en,content_pt,content_en,meta_description_pt,meta_description_en')
       .order('updated_at', { ascending: false });
     if(error) {
       console.warn('Failed to load posts:', error.message);
@@ -4770,7 +4781,14 @@ function _mkRenderPosts() {
     if(MK_STATE.filterStatus !== 'all' && p.status !== MK_STATE.filterStatus) return false;
     if(MK_STATE.filterCat && p.category !== MK_STATE.filterCat) return false;
     if(MK_STATE.search) {
-      const hay = (p.title + ' ' + (p.subtitle||'') + ' ' + (p.tags||[]).join(' ') + ' ' + (p.author_name||'')).toLowerCase();
+      // Search across both languages + legacy mono columns so the same
+      // term lands the post whether the user types it in PT or EN.
+      const hay = [
+        p.title_pt, p.title_en, p.title,
+        p.subtitle_pt, p.subtitle_en, p.subtitle,
+        (p.tags || []).join(' '),
+        p.author_name
+      ].filter(Boolean).join(' ').toLowerCase();
       if(hay.indexOf(MK_STATE.search) === -1) return false;
     }
     return true;
@@ -4798,7 +4816,17 @@ function _mkRenderPosts() {
     const catColor = ({ai_screening:'var(--mk-cat-ai)',candidate_experience:'var(--mk-cat-cand)',gdpr:'var(--mk-cat-gdpr)',product_updates:'var(--mk-cat-prod)'})[p.category] || '#999';
     const statusLbl = MK_STATUS_LABELS[p.status] || p.status;
     const date = _mkFmtDate(p.published_at || p.updated_at || p.created_at);
-    const excerpt = _mkExcerptFromContent(p.content) || (p.subtitle || '');
+    // PT is canonical on the admin list (matches what the public site
+    // sees via the mono shadow). Fall back to the mono column for rows
+    // written before Phase 2 split the columns.
+    const cardTitle   = p.title_pt || p.title || '';
+    const cardContent = p.content_pt || p.content || '';
+    const cardSubtitle = p.subtitle_pt || p.subtitle || '';
+    const excerpt = _mkExcerptFromContent(cardContent) || cardSubtitle;
+    // EN-translation indicator. Derived from the new column directly —
+    // the `language` column is a legacy flag that doesn't track
+    // translations and shouldn't be trusted here.
+    const hasEN = !!(p.title_en && String(p.title_en).trim());
     const thumb = p.featured_image_url
       ? `<div class="mk-post-thumb"><img src="${_mkEscapeHtml(p.featured_image_url)}" alt=""></div>`
       : `<div class="mk-post-thumb placeholder"><i class="ti ti-photo"></i></div>`;
@@ -4812,8 +4840,10 @@ function _mkRenderPosts() {
           <div class="mk-post-meta-top">
             <span class="mk-post-cat"><span class="cat-dot" style="background:${catColor}"></span>${_mkEscapeHtml(catLabel)}</span>
             <span class="mk-badge ${_mkEscapeHtml(p.status)}">${_mkEscapeHtml(statusLbl)}</span>
+            <span class="mk-lang-chip on" title="${_isEN ? 'Portuguese version' : 'Versão portuguesa'}">PT</span>
+            <span class="mk-lang-chip ${hasEN ? 'on' : 'off'}" title="${hasEN ? (_isEN ? 'English version available' : 'Versão inglesa disponível') : (_isEN ? 'No English version yet' : 'Sem versão inglesa')}">EN</span>
           </div>
-          <h3 class="mk-post-title">${_mkEscapeHtml(p.title) || '(sem título)'}</h3>
+          <h3 class="mk-post-title">${_mkEscapeHtml(cardTitle) || '(sem título)'}</h3>
           <p class="mk-post-excerpt">${_mkEscapeHtml(excerpt)}</p>
           <div class="mk-post-meta-bot">
             <span><i class="ti ti-calendar"></i>${date}</span>
