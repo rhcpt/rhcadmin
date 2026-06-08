@@ -4459,7 +4459,19 @@ const MK_STATE = {
   current:      null,    // currently-editing post (null = new)
   dirty:        false,   // unsaved changes flag (drives beforeunload warning)
   saving:       false,
-  saveTimer:    null
+  saveTimer:    null,
+  // Phase 2 bilingual editor — mirror of the per-language fields the
+  // user is editing. Only `title / subtitle / content / meta_description`
+  // are bilingual; slug / status / category / tags / featured_image stay
+  // mono and live in their own DOM elements. activeLang drives which
+  // slot the visible inputs are bound to at any moment.
+  activeLang: 'pt',
+  draft: {
+    title_pt: '',            title_en: '',
+    subtitle_pt: '',         subtitle_en: '',
+    content_pt: '',          content_en: '',
+    meta_description_pt: '', meta_description_en: ''
+  }
 };
 
 function _mkSlugify(s) {
@@ -4602,12 +4614,35 @@ function _mkWireBlog() {
     document.getElementById('mk-status-badge').className = 'mk-badge ' + $statusSel.value;
   };
 
-  // Language segmented
+  // Language segmented — Phase 2 bilingual editor. Mirror-and-swap:
+  // snapshot the four visible inputs into the OLD lang slot, flip the
+  // active flag, restore from the NEW lang slot, refresh counters.
+  // Switching language alone is NOT a content edit, so _markDirty()
+  // is intentionally NOT called here — subsequent typing handlers
+  // (already wired in :4595-4598) take care of it.
   document.querySelectorAll('#marketing-area #mk-lang-seg .mk-seg-btn').forEach(b => {
     b.onclick = () => {
+      const newLang = b.dataset.lang;
+      if(newLang === MK_STATE.activeLang) return;
+      const old = MK_STATE.activeLang;
+      // Snapshot visible → draft[old]
+      MK_STATE.draft['title_' + old]            = document.getElementById('mk-edit-title').value;
+      MK_STATE.draft['subtitle_' + old]         = document.getElementById('mk-edit-subtitle').value;
+      MK_STATE.draft['content_' + old]          = document.getElementById('mk-edit-body').innerHTML;
+      MK_STATE.draft['meta_description_' + old] = document.getElementById('mk-meta-desc').value;
+      // Flip activeLang + UI active state
+      MK_STATE.activeLang = newLang;
       document.querySelectorAll('#marketing-area #mk-lang-seg .mk-seg-btn').forEach(x => x.classList.remove('active'));
       b.classList.add('active');
-      _markDirty();
+      // Restore draft[new] → visible
+      document.getElementById('mk-edit-title').value     = MK_STATE.draft['title_' + newLang]            || '';
+      document.getElementById('mk-edit-subtitle').value  = MK_STATE.draft['subtitle_' + newLang]         || '';
+      document.getElementById('mk-edit-body').innerHTML  = MK_STATE.draft['content_' + newLang]          || '';
+      document.getElementById('mk-meta-desc').value      = MK_STATE.draft['meta_description_' + newLang] || '';
+      // Refresh derived UI bound to whichever lang is now visible
+      _mkUpdateWordCount();
+      _mkUpdateMetaCounter();
+      _mkUpdateSEOPreview();
     };
   });
 
@@ -4854,10 +4889,33 @@ async function _mkConfirmDelete() {
 }
 
 function _mkFillEditor(p) {
-  document.getElementById('mk-edit-title').value     = p?.title    || '';
-  document.getElementById('mk-edit-subtitle').value  = p?.subtitle || '';
-  document.getElementById('mk-edit-body').innerHTML  = p?.content  || '';
-  document.getElementById('mk-meta-desc').value      = p?.meta_description || '';
+  // Populate the bilingual draft from the BD columns.
+  //   PT slot: new column → legacy mono → ''
+  //   EN slot: new column → PT slot (display fallback) → legacy mono → ''
+  // This makes rows written before Phase 2 (only the mono columns
+  // filled) show up as a PT-only draft, and the EN editor pane
+  // pre-fills with the PT text rather than going blank — the user can
+  // then translate over it.
+  const _pickPt = (newCol, oldCol) => (p?.[newCol] ?? p?.[oldCol] ?? '') || '';
+  const _pickEn = (newCol, ptVal, oldCol) =>
+    (p?.[newCol] ?? ptVal ?? p?.[oldCol] ?? '') || '';
+  MK_STATE.draft.title_pt            = _pickPt('title_pt',            'title');
+  MK_STATE.draft.title_en            = _pickEn('title_en',            MK_STATE.draft.title_pt,            'title');
+  MK_STATE.draft.subtitle_pt         = _pickPt('subtitle_pt',         'subtitle');
+  MK_STATE.draft.subtitle_en         = _pickEn('subtitle_en',         MK_STATE.draft.subtitle_pt,         'subtitle');
+  MK_STATE.draft.content_pt          = _pickPt('content_pt',          'content');
+  MK_STATE.draft.content_en          = _pickEn('content_en',          MK_STATE.draft.content_pt,          'content');
+  MK_STATE.draft.meta_description_pt = _pickPt('meta_description_pt', 'meta_description');
+  MK_STATE.draft.meta_description_en = _pickEn('meta_description_en', MK_STATE.draft.meta_description_pt, 'meta_description');
+  // Active language defaults to PT on a brand-new post.
+  MK_STATE.activeLang = p?.language === 'en' ? 'en' : 'pt';
+  const _a = MK_STATE.activeLang;
+
+  // Paint the visible inputs from the draft slot for the active lang.
+  document.getElementById('mk-edit-title').value     = MK_STATE.draft['title_' + _a];
+  document.getElementById('mk-edit-subtitle').value  = MK_STATE.draft['subtitle_' + _a];
+  document.getElementById('mk-edit-body').innerHTML  = MK_STATE.draft['content_' + _a];
+  document.getElementById('mk-meta-desc').value      = MK_STATE.draft['meta_description_' + _a];
   document.getElementById('mk-slug').value           = p?.slug     || '';
   document.getElementById('mk-status-select').value  = p?.status   || 'draft';
   document.getElementById('mk-status-badge').textContent = MK_STATUS_LABELS[p?.status||'draft'];
@@ -4866,9 +4924,9 @@ function _mkFillEditor(p) {
   // Featured image
   _mkRenderFeatured(p?.featured_image_url || null);
 
-  // Language
+  // Language segmented — reflect activeLang (replaces the old read of p.language).
   document.querySelectorAll('#marketing-area #mk-lang-seg .mk-seg-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.lang === (p?.language || 'pt'));
+    b.classList.toggle('active', b.dataset.lang === _a);
   });
   // Category
   document.querySelectorAll('#marketing-area #mk-cat-grid .mk-cat-pick').forEach(b => {
@@ -4900,16 +4958,41 @@ function _mkAddTag(text) {
 function _mkCollectFormState() {
   const tags = Array.from(document.querySelectorAll('#marketing-area #mk-tag-wrap .mk-tag-chip'))
     .map(c => c.firstChild.textContent.trim()).filter(Boolean);
-  const lang = document.querySelector('#marketing-area #mk-lang-seg .mk-seg-btn.active')?.dataset.lang || 'pt';
-  const cat  = document.querySelector('#marketing-area #mk-cat-grid .mk-cat-pick.active')?.dataset.cat || null;
+  const a   = MK_STATE.activeLang || 'pt';
+  const cat = document.querySelector('#marketing-area #mk-cat-grid .mk-cat-pick.active')?.dataset.cat || null;
+
+  // Sync the activeLang slot from the visible inputs. The PT/EN
+  // switch already snapshots on toggle, but autosave fires without a
+  // switch — so we have to capture whatever the user typed since the
+  // last snapshot before serialising the payload.
+  MK_STATE.draft['title_' + a]            = document.getElementById('mk-edit-title').value.trim();
+  MK_STATE.draft['subtitle_' + a]         = document.getElementById('mk-edit-subtitle').value.trim();
+  MK_STATE.draft['content_' + a]          = document.getElementById('mk-edit-body').innerHTML;
+  MK_STATE.draft['meta_description_' + a] = document.getElementById('mk-meta-desc').value.trim();
+
+  const d = MK_STATE.draft;
   return {
-    title:    document.getElementById('mk-edit-title').value.trim(),
-    subtitle: document.getElementById('mk-edit-subtitle').value.trim() || null,
+    // New bilingual columns. Empty → null so the BD doesn't accumulate
+    // '' rows that look like data when filtered.
+    title_pt:            d.title_pt            || null,
+    title_en:            d.title_en            || null,
+    subtitle_pt:         d.subtitle_pt         || null,
+    subtitle_en:         d.subtitle_en         || null,
+    content_pt:          d.content_pt          || null,
+    content_en:          d.content_en          || null,
+    meta_description_pt: d.meta_description_pt || null,
+    meta_description_en: d.meta_description_en || null,
+    // Shadow writes — keep rhc/blog.html and rhc/post.html (which still
+    // read mono columns) working. PT is the canonical source per the
+    // Phase 2 fallback rule.
+    title:            d.title_pt    || '',
+    subtitle:         d.subtitle_pt || null,
+    content:          d.content_pt  || '',
+    meta_description: d.meta_description_pt || null,
+    // Mono fields — unchanged.
     slug:     document.getElementById('mk-slug').value.trim(),
-    content:  document.getElementById('mk-edit-body').innerHTML,
-    meta_description: document.getElementById('mk-meta-desc').value.trim() || null,
     status:   document.getElementById('mk-status-select').value,
-    language: lang,
+    language: a,
     category: cat,
     tags:     tags
   };
