@@ -943,21 +943,31 @@
   #marketing-area .mk-post-card.cat-candidate_experience { --bar-color: var(--mk-cat-cand); }
   #marketing-area .mk-post-card.cat-gdpr { --bar-color: var(--mk-cat-gdpr); }
   #marketing-area .mk-post-card.cat-product_updates { --bar-color: var(--mk-cat-prod); }
-  #marketing-area .mk-post-delete {
-    position: absolute; top: 8px; right: 8px; z-index: 2;
+  #marketing-area .mk-post-delete,
+  #marketing-area .mk-post-edit {
+    position: absolute; top: 8px; z-index: 2;
     width: 28px; height: 28px; border-radius: 6px;
     background: transparent; border: 1px solid transparent;
     color: var(--mk-text-tertiary);
     display: inline-flex; align-items: center; justify-content: center;
     cursor: pointer; opacity: 0; transition: opacity .12s, background .12s, color .12s, border-color .12s;
   }
-  #marketing-area .mk-post-card:hover .mk-post-delete { opacity: 1; }
+  #marketing-area .mk-post-delete { right: 8px; }
+  #marketing-area .mk-post-edit   { right: 42px; }
+  #marketing-area .mk-post-card:hover .mk-post-delete,
+  #marketing-area .mk-post-card:hover .mk-post-edit { opacity: 1; }
   #marketing-area .mk-post-delete:hover {
     background: rgba(226,107,107,.12);
     border-color: rgba(226,107,107,.32);
     color: var(--red);
   }
-  #marketing-area .mk-post-delete i { font-size: 15px; }
+  #marketing-area .mk-post-edit:hover {
+    background: var(--mk-accent-soft, rgba(0,229,160,.12));
+    border-color: rgba(0,229,160,.32);
+    color: var(--accent);
+  }
+  #marketing-area .mk-post-delete i,
+  #marketing-area .mk-post-edit i { font-size: 15px; }
   #marketing-area .mk-post-thumb {
     width: 84px; height: 84px; border-radius: var(--mk-radius-md);
     flex-shrink: 0; overflow: hidden; position: relative;
@@ -4824,10 +4834,12 @@ function _mkRenderPosts() {
     const thumb = p.featured_image_url
       ? `<div class="mk-post-thumb"><img src="${_mkEscapeHtml(p.featured_image_url)}" alt=""></div>`
       : `<div class="mk-post-thumb placeholder"><i class="ti ti-photo"></i></div>`;
-    const delTitle = _isEN ? 'Delete post' : 'Apagar post';
+    const delTitle  = _isEN ? 'Delete post' : 'Apagar post';
+    const editTitle = _isEN ? 'Edit post'   : 'Editar post';
     return `
       <div class="mk-post-card ${catClass}" data-id="${_mkEscapeHtml(p.id)}">
         <div class="accent-bar"></div>
+        <button class="mk-post-edit" type="button" data-edit-id="${_mkEscapeHtml(p.id)}" title="${editTitle}" aria-label="${editTitle}"><i class="ti ti-pencil"></i></button>
         <button class="mk-post-delete" type="button" data-del-id="${_mkEscapeHtml(p.id)}" title="${delTitle}" aria-label="${delTitle}"><i class="ti ti-trash"></i></button>
         ${thumb}
         <div class="mk-post-body">
@@ -4854,6 +4866,12 @@ function _mkRenderPosts() {
   // Trash icon — stopPropagation so the card's editor onclick doesn't fire.
   list.querySelectorAll('.mk-post-delete').forEach(btn => {
     btn.onclick = (e) => { e.stopPropagation(); _mkOpenDeleteConfirm(btn.dataset.delId); };
+  });
+  // Pencil icon — explicit "edit (PT)" affordance next to the trash.
+  // Same destination as clicking the card body; stopPropagation so the
+  // card's default onclick doesn't also fire.
+  list.querySelectorAll('.mk-post-edit').forEach(btn => {
+    btn.onclick = (e) => { e.stopPropagation(); _mkOpenEditor(btn.dataset.editId); };
   });
   // EN pencil — opens the editor in EN-edit mode. stopPropagation so
   // the card's default PT-open onclick doesn't also fire.
