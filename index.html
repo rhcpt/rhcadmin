@@ -1001,14 +1001,6 @@
   }
   #marketing-area .mk-lang-chip.on  { background: var(--mk-accent-soft, rgba(0,229,160,.12)); color: var(--accent); border: 1px solid rgba(0,229,160,.28); }
   #marketing-area .mk-lang-chip.off { background: var(--mk-bg-tertiary); color: var(--mk-text-tertiary); border: 1px solid var(--mk-border-secondary); }
-  /* The EN chip becomes a button when it's the affordance to open the
-     editor in EN-edit mode. PT stays a passive span (you reach PT by
-     clicking the card body). */
-  #marketing-area button.mk-lang-chip { cursor: pointer; font-family: 'JetBrains Mono', ui-monospace, monospace; }
-  #marketing-area button.mk-lang-chip .mk-lang-pen { display: none; font-size: 11px; margin-left: 4px; vertical-align: -1px; }
-  #marketing-area button.mk-lang-chip:hover .mk-lang-pen { display: inline-block; }
-  #marketing-area button.mk-lang-chip.off:hover { background: var(--mk-accent-soft, rgba(0,229,160,.12)); color: var(--accent); border-color: rgba(0,229,160,.28); }
-  #marketing-area button.mk-lang-chip.on:hover  { filter: brightness(1.12); }
   #marketing-area .mk-post-title {
     font-size: 14.5px; font-weight: 600; color: var(--mk-text-primary);
     line-height: 1.3; margin: 0 0 4px;
@@ -2239,6 +2231,11 @@
                   <option value="published">Publicado</option>
                   <option value="archived">Arquivado</option>
                 </select>
+                <p class="mk-panel-label" style="margin: 12px 0 8px;"><i class="ti ti-language"></i>Língua</p>
+                <div class="mk-segmented" id="mk-lang-seg">
+                  <button class="mk-seg-btn active" data-lang="pt">PT</button>
+                  <button class="mk-seg-btn" data-lang="en">EN</button>
+                </div>
               </div>
 
               <div class="mk-panel-card">
@@ -4661,6 +4658,41 @@ function _mkWireBlog() {
     document.getElementById('mk-status-badge').className = 'mk-badge ' + $statusSel.value;
   };
 
+  // Language segmented — bilingual editor mirror-and-swap. Snapshot
+  // the four visible inputs into the OLD lang slot, flip activeLang +
+  // the .active class, restore from the NEW lang slot, refresh
+  // counters and toggle the EN-mode banner. Switching language alone
+  // is NOT a content edit so _markDirty() is intentionally NOT called
+  // — the input handlers fire on the next keystroke if there's a
+  // real edit.
+  document.querySelectorAll('#marketing-area #mk-lang-seg .mk-seg-btn').forEach(b => {
+    b.onclick = () => {
+      const newLang = b.dataset.lang;
+      if(newLang === MK_STATE.activeLang) return;
+      const old = MK_STATE.activeLang;
+      // Snapshot visible → draft[old]
+      MK_STATE.draft['title_' + old]            = document.getElementById('mk-edit-title').value;
+      MK_STATE.draft['subtitle_' + old]         = document.getElementById('mk-edit-subtitle').value;
+      MK_STATE.draft['content_' + old]          = document.getElementById('mk-edit-body').innerHTML;
+      MK_STATE.draft['meta_description_' + old] = document.getElementById('mk-meta-desc').value;
+      // Flip activeLang + UI active state
+      MK_STATE.activeLang = newLang;
+      document.querySelectorAll('#marketing-area #mk-lang-seg .mk-seg-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      // Restore draft[new] → visible
+      document.getElementById('mk-edit-title').value     = MK_STATE.draft['title_' + newLang]            || '';
+      document.getElementById('mk-edit-subtitle').value  = MK_STATE.draft['subtitle_' + newLang]         || '';
+      document.getElementById('mk-edit-body').innerHTML  = MK_STATE.draft['content_' + newLang]          || '';
+      document.getElementById('mk-meta-desc').value      = MK_STATE.draft['meta_description_' + newLang] || '';
+      // Refresh derived UI bound to whichever lang is now visible +
+      // show/hide the EN-mode banner.
+      _mkUpdateWordCount();
+      _mkUpdateMetaCounter();
+      _mkUpdateSEOPreview();
+      _mkRenderLangBanner(newLang);
+    };
+  });
+
   // Category picker
   document.querySelectorAll('#marketing-area #mk-cat-grid .mk-cat-pick').forEach(b => {
     b.onclick = () => {
@@ -4847,7 +4879,7 @@ function _mkRenderPosts() {
             <span class="mk-post-cat"><span class="cat-dot" style="background:${catColor}"></span>${_mkEscapeHtml(catLabel)}</span>
             <span class="mk-badge ${_mkEscapeHtml(p.status)}">${_mkEscapeHtml(statusLbl)}</span>
             <span class="mk-lang-chip on" title="${_isEN ? 'Portuguese version' : 'Versão portuguesa'}">PT</span>
-            <button type="button" class="mk-lang-chip ${hasEN ? 'on' : 'off'} mk-lang-edit-en" data-edit-id="${_mkEscapeHtml(p.id)}" title="${hasEN ? (_isEN ? 'Edit English version' : 'Editar versão inglesa') : (_isEN ? 'Translate to English' : 'Traduzir para inglês')}">EN<i class="ti ti-pencil mk-lang-pen"></i></button>
+            <span class="mk-lang-chip ${hasEN ? 'on' : 'off'}" title="${hasEN ? (_isEN ? 'English version available' : 'Versão inglesa disponível') : (_isEN ? 'No English version yet' : 'Sem versão inglesa')}">EN</span>
           </div>
           <h3 class="mk-post-title">${_mkEscapeHtml(cardTitle) || '(sem título)'}</h3>
           <p class="mk-post-excerpt">${_mkEscapeHtml(excerpt)}</p>
@@ -4873,22 +4905,15 @@ function _mkRenderPosts() {
   list.querySelectorAll('.mk-post-edit').forEach(btn => {
     btn.onclick = (e) => { e.stopPropagation(); _mkOpenEditor(btn.dataset.editId); };
   });
-  // EN pencil — opens the editor in EN-edit mode. stopPropagation so
-  // the card's default PT-open onclick doesn't also fire.
-  list.querySelectorAll('.mk-lang-edit-en').forEach(btn => {
-    btn.onclick = (e) => { e.stopPropagation(); _mkOpenEditor(btn.dataset.editId, { lang: 'en' }); };
-  });
 }
 
-function _mkOpenEditor(postId, opts) {
+function _mkOpenEditor(postId) {
   if(MK_STATE.dirty && !confirm('Tens alterações não guardadas. Sair sem guardar?')) return;
   MK_STATE.dirty = false;
   MK_STATE.current = postId ? MK_STATE.posts.find(p => p.id === postId) : null;
-  // Phase 2 step 4 — the editor opens in ONE language at a time. PT
-  // is the default; the EN pencil on the list passes { lang: 'en' }.
-  // _mkFillEditor below honours MK_STATE.activeLang to pick which
-  // slot of the bilingual draft is painted into the visible inputs.
-  MK_STATE.activeLang = (opts && opts.lang === 'en') ? 'en' : 'pt';
+  // The editor always opens in PT; the in-editor segmented PT/EN lets
+  // the user switch to the EN slot from inside.
+  MK_STATE.activeLang = 'pt';
   _mkFillEditor(MK_STATE.current);
   _mkShowView('mk-editor-view');
 }
@@ -4977,6 +5002,10 @@ function _mkFillEditor(p) {
   // Featured image
   _mkRenderFeatured(p?.featured_image_url || null);
 
+  // Language segmented — reflect activeLang on the side-panel pills.
+  document.querySelectorAll('#marketing-area #mk-lang-seg .mk-seg-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.lang === _a);
+  });
   // EN-mode banner — visible only while editing the EN slot.
   _mkRenderLangBanner(_a);
 
