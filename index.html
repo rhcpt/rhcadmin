@@ -2618,20 +2618,20 @@
       <div class="plan-card" data-plan="growth" onclick="selectPlan(this)">
         <div class="plan-card-tag">ACTUAL</div>
         <div class="plan-card-name">Growth</div>
-        <div class="plan-card-jobs">25</div>
+        <div class="plan-card-jobs">15</div>
         <div class="plan-card-jobs-label">Vagas</div>
         <ul class="plan-card-features">
-          <li><i class="ti ti-check"></i>25 vagas em simultâneo</li>
+          <li><i class="ti ti-check"></i>15 vagas em simultâneo</li>
           <li><i class="ti ti-check"></i>Candidatos ilimitados</li>
         </ul>
       </div>
       <div class="plan-card" data-plan="pro" onclick="selectPlan(this)">
         <div class="plan-card-tag">ACTUAL</div>
         <div class="plan-card-name">Pro</div>
-        <div class="plan-card-jobs">50</div>
+        <div class="plan-card-jobs">30</div>
         <div class="plan-card-jobs-label">Vagas</div>
         <ul class="plan-card-features">
-          <li><i class="ti ti-check"></i>50 vagas em simultâneo</li>
+          <li><i class="ti ti-check"></i>30 vagas em simultâneo</li>
           <li><i class="ti ti-check"></i>Candidatos ilimitados</li>
         </ul>
       </div>
@@ -2675,8 +2675,8 @@
       <label class="form-label" style="font-size:12px;color:#666;display:block;margin-bottom:6px;">Pack</label>
       <select id="inv-plan" class="form-select" style="width:100%;background:#0d0d0d;border:1px solid #2a2a2a;border-radius:8px;color:#ddd;font-size:13px;padding:10px 12px;">
         <option value="starter" selected>Starter (5 vagas)</option>
-        <option value="growth">Growth (25 vagas)</option>
-        <option value="pro">Pro (50 vagas)</option>
+        <option value="growth">Growth (15 vagas)</option>
+        <option value="pro">Pro (30 vagas)</option>
       </select>
     </div>
     <button class="btn-primary" onclick="generateInvite()">Enviar convite</button>
@@ -2856,7 +2856,7 @@ function buildEmailHTML(opts) {
 // 'suporte' = tickets only; view companies but cannot add/remove; no admin management page.
 let CURRENT_ROLE = 'admin';
 // Mirror do rhcportal — keep in sync.
-const PLAN_LIMITS = { starter: 5, growth: 25, pro: 50 };
+const PLAN_LIMITS = { starter: 5, growth: 15, pro: 30 };
 let _realtimeChannel      = null;
 let _realtimeRefreshTimer = null;
 let ADMIN = null;
