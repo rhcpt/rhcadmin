@@ -2172,7 +2172,7 @@
               <div class="mk-save-indicator" id="mk-save-ind"><span class="pulse"></span><i class="ti ti-cloud-check"></i><span id="mk-save-label">Sem alterações</span></div>
             </div>
             <button class="mk-btn mk-btn-ghost" id="mk-preview-btn"><i class="ti ti-eye"></i>Pré-visualizar</button>
-            <button class="mk-btn mk-btn-accent" id="mk-publish-btn"><i class="ti ti-send"></i>Publicar</button>
+            <button class="mk-btn mk-btn-accent" id="mk-publish-btn"><i class="ti ti-device-floppy"></i><span id="mk-publish-btn-label">Guardar</span></button>
           </div>
 
           <!-- EN-mode banner — _mkRenderLangBanner shows this only while
@@ -4719,7 +4719,7 @@ function _mkWireBlog() {
   };
 
   // Publish button
-  document.getElementById('mk-publish-btn').onclick = _mkPublishPost;
+  document.getElementById('mk-publish-btn').onclick = _mkSaveAndExit;
 }
 
 function _mkWireBeforeUnload() {
@@ -4981,6 +4981,9 @@ function _mkFillEditor(p) {
 
   // EN-mode banner — visible only while editing the EN slot.
   _mkRenderLangBanner(_a);
+  // Save-button label follows the admin's chrome language.
+  const _saveLbl = document.getElementById('mk-publish-btn-label');
+  if(_saveLbl) _saveLbl.textContent = ((document.documentElement.lang || 'pt') === 'en') ? 'Save' : 'Guardar';
 
   // Category
   document.querySelectorAll('#marketing-area #mk-cat-grid .mk-cat-pick').forEach(b => {
@@ -5147,13 +5150,26 @@ async function _mkSavePost(announce) {
   }
 }
 
-async function _mkPublishPost() {
-  document.getElementById('mk-status-select').value = 'published';
+// "Guardar" button (top of the editor). The dropdown is the single
+// source of truth for status — we DON'T mutate it here. _mkSavePost
+// reads document.getElementById('mk-status-select').value via
+// _mkCollectFormState, so whatever the dropdown shows is what gets
+// persisted. published_at stays stamped only on the first transition
+// to 'published', preserving the original publication date across
+// re-saves (and not clearing it if the post later goes back to draft —
+// the historical date is intentionally kept).
+async function _mkSaveAndExit() {
   MK_STATE.dirty = true;
-  if(!MK_STATE.current?.published_at) {
-    // Inject published_at via direct update after save
-  }
   await _mkSavePost(true);
+  // _mkSavePost bails (with the save-indicator showing the reason)
+  // when the title or slug is missing — it leaves MK_STATE.dirty=true
+  // and doesn't touch MK_STATE.current. Detect that and stop so the
+  // UI doesn't claim a save that never happened (no view switch, no
+  // toast, no badge update).
+  if(MK_STATE.dirty) return;
+
+  // Stamp published_at on the first transition to 'published'. We
+  // never clear it on a draft transition by design.
   if(MK_STATE.current?.id && MK_STATE.current.status === 'published' && !MK_STATE.current.published_at) {
     try {
       const { data } = await supa.from('blog_posts')
@@ -5164,18 +5180,27 @@ async function _mkPublishPost() {
         const idx = MK_STATE.posts.findIndex(p => p.id === data.id);
         if(idx >= 0) MK_STATE.posts[idx] = data;
       }
-    } catch(e) { console.warn('publish published_at update failed:', e); }
+    } catch(e) { console.warn('published_at stamp failed:', e); }
   }
-  document.getElementById('mk-status-badge').textContent = 'Publicado';
-  document.getElementById('mk-status-badge').className = 'mk-badge published';
+
+  // Reflect the actually-saved status on the editor-bar badge before
+  // we leave (keeps the badge consistent with the row that was
+  // persisted, in case the dropdown was edited mid-save).
+  const savedStatus = MK_STATE.current?.status || 'draft';
+  document.getElementById('mk-status-badge').textContent = MK_STATUS_LABELS[savedStatus] || 'Rascunho';
+  document.getElementById('mk-status-badge').className   = 'mk-badge ' + savedStatus;
+
   _mkRenderStats();
-  // Re-render the list so the just-published card flips to the green
-  // "Publicado" badge, then jump back to the list view and confirm
-  // with a green toast. No more "Fase 4" internal jargon.
   _mkRenderPosts();
   _mkShowView('mk-list-view');
+
+  // Toast wording mirrors what was actually saved.
   const isEN = (document.documentElement.lang || 'pt') === 'en';
-  showToast(isEN ? '✓ Article published' : '✓ Artigo publicado', { success: true });
+  let msg;
+  if(savedStatus === 'published')      msg = isEN ? '✓ Article published' : '✓ Artigo publicado';
+  else if(savedStatus === 'archived')  msg = isEN ? '✓ Article archived'  : '✓ Artigo arquivado';
+  else                                 msg = isEN ? '✓ Draft saved'       : '✓ Rascunho guardado';
+  showToast(msg, { success: true });
 }
 
 function _mkRenderFeatured(url) {
