@@ -1072,6 +1072,34 @@
   #marketing-area .mk-lang-banner-sub   { font-size: 12px; color: var(--mk-text-secondary); }
 
   #marketing-area .mk-edit-grid { display: grid; grid-template-columns: 1fr 320px; gap: 1.4rem; }
+
+  /* Bilingual side-by-side (sub-step i — title / subtitle / meta only).
+     In PT mode the .mk-bilingual wrapper is layout-transparent and the
+     PT-ref sibling is hidden — the editor looks exactly like before.
+     In EN mode (#mk-editor-view.split), the wrapper becomes a 2-col
+     grid and the PT-ref shows up on the left as a muted read-only
+     reference next to the editable EN input on the right. */
+  #marketing-area .mk-bilingual { display: contents; }
+  #marketing-area .mk-bilingual > .mk-ref-pt { display: none; }
+  #marketing-area #mk-editor-view.split .mk-bilingual {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    align-items: start;
+  }
+  #marketing-area #mk-editor-view.split .mk-bilingual-title    { margin-bottom: 8px; }
+  #marketing-area #mk-editor-view.split .mk-bilingual-subtitle { margin-bottom: 18px; }
+  #marketing-area #mk-editor-view.split .mk-bilingual > .mk-edit-title,
+  #marketing-area #mk-editor-view.split .mk-bilingual > .mk-edit-subtitle { margin: 0; }
+  #marketing-area #mk-editor-view.split .mk-bilingual > .mk-ref-pt {
+    display: block;
+    background: rgba(255,255,255,.025);
+    border: 1px dashed rgba(255,255,255,.10);
+    border-radius: var(--mk-radius-sm);
+    padding: 8px 12px;
+    color: var(--mk-text-tertiary);
+    cursor: default;
+    resize: none;
+  }
+  #marketing-area #mk-editor-view.split .mk-bilingual > .mk-ref-pt:focus { outline: none; }
   #marketing-area .mk-edit-canvas {
     background: var(--mk-surface-elevated); border: 1px solid var(--mk-border-secondary);
     border-radius: var(--mk-radius-lg); padding: 1.6rem 1.8rem 2rem;
@@ -2188,8 +2216,14 @@
 
           <div class="mk-edit-grid">
             <div class="mk-edit-canvas">
-              <input type="text" class="mk-edit-title" id="mk-edit-title" placeholder="Título do post…">
-              <input type="text" class="mk-edit-subtitle" id="mk-edit-subtitle" placeholder="Pequeno subtítulo ou resumo…">
+              <div class="mk-bilingual mk-bilingual-title">
+                <input type="text" class="mk-edit-title mk-ref-pt" id="mk-edit-title-pt-ref" readonly tabindex="-1" aria-label="Título — versão PT (referência)">
+                <input type="text" class="mk-edit-title" id="mk-edit-title" placeholder="Título do post…">
+              </div>
+              <div class="mk-bilingual mk-bilingual-subtitle">
+                <input type="text" class="mk-edit-subtitle mk-ref-pt" id="mk-edit-subtitle-pt-ref" readonly tabindex="-1" aria-label="Subtítulo — versão PT (referência)">
+                <input type="text" class="mk-edit-subtitle" id="mk-edit-subtitle" placeholder="Pequeno subtítulo ou resumo…">
+              </div>
 
               <div class="mk-toolbar">
                 <button class="mk-tb-btn" data-cmd="bold" title="Negrito"><i class="ti ti-bold"></i></button>
@@ -2255,7 +2289,10 @@
               <div class="mk-panel-card">
                 <p class="mk-panel-label"><i class="ti ti-search"></i>SEO</p>
                 <input type="text" id="mk-slug" placeholder="Slug do URL" style="margin-bottom:8px;">
-                <textarea id="mk-meta-desc" placeholder="Meta description (máx. 160 caracteres)" rows="3"></textarea>
+                <div class="mk-bilingual mk-bilingual-meta">
+                  <textarea id="mk-meta-desc-pt-ref" class="mk-ref-pt" rows="3" readonly tabindex="-1" aria-label="Meta description — versão PT (referência)"></textarea>
+                  <textarea id="mk-meta-desc" placeholder="Meta description (máx. 160 caracteres)" rows="3"></textarea>
+                </div>
                 <div class="mk-meta-counter" id="mk-meta-counter">0 / 160</div>
                 <div class="mk-seo-preview">
                   <div class="mk-seo-url"><span class="seo-host">rhc.pt</span> › post.html?slug=<span id="mk-seo-slug">—</span></div>
@@ -4971,6 +5008,23 @@ function _mkFillEditor(p) {
   document.getElementById('mk-edit-subtitle').value  = MK_STATE.draft['subtitle_' + _a];
   document.getElementById('mk-edit-body').innerHTML  = MK_STATE.draft['content_' + _a];
   document.getElementById('mk-meta-desc').value      = MK_STATE.draft['meta_description_' + _a];
+
+  // Bilingual side-by-side (sub-step i): in EN mode flip the editor
+  // view into .split so the three pairs (title / subtitle / meta) lay
+  // their PT-ref siblings next to the editable EN inputs, and seed
+  // those siblings with the PT draft slots. In PT mode there's
+  // nothing to do — the CSS keeps the PT-ref siblings hidden and the
+  // wrapper layout-transparent.
+  const _editorView = document.getElementById('mk-editor-view');
+  if(_editorView) _editorView.classList.toggle('split', _a === 'en');
+  if(_a === 'en') {
+    const _ptT = document.getElementById('mk-edit-title-pt-ref');
+    const _ptS = document.getElementById('mk-edit-subtitle-pt-ref');
+    const _ptM = document.getElementById('mk-meta-desc-pt-ref');
+    if(_ptT) _ptT.value = MK_STATE.draft.title_pt            || '';
+    if(_ptS) _ptS.value = MK_STATE.draft.subtitle_pt         || '';
+    if(_ptM) _ptM.value = MK_STATE.draft.meta_description_pt || '';
+  }
   document.getElementById('mk-slug').value           = p?.slug     || '';
   document.getElementById('mk-status-select').value  = p?.status   || 'draft';
   document.getElementById('mk-status-badge').textContent = MK_STATUS_LABELS[p?.status||'draft'];
