@@ -1100,6 +1100,17 @@
     resize: none;
   }
   #marketing-area #mk-editor-view.split .mk-bilingual > .mk-ref-pt:focus { outline: none; }
+
+  /* Sub-step (ii): extend the same pattern to the rich-content body.
+     In PT mode the .mk-bilingual-body wrapper is transparent (display:
+     contents) and the PT-ref body is display:none. In EN split mode
+     the wrapper becomes a 2-col grid sharing the rules above; only
+     two body-specific tweaks: align both columns to stretch so the
+     PT-ref grows with the editable, and give the PT-ref a minimum
+     height so it doesn't collapse when content_pt is empty. */
+  #marketing-area #mk-editor-view.split .mk-bilingual-body { align-items: stretch; }
+  #marketing-area #mk-editor-view.split .mk-bilingual-body > .mk-edit-body { margin: 0; }
+  #marketing-area #mk-editor-view.split .mk-bilingual-body > .mk-ref-pt { min-height: 380px; }
   #marketing-area .mk-edit-canvas {
     background: var(--mk-surface-elevated); border: 1px solid var(--mk-border-secondary);
     border-radius: var(--mk-radius-lg); padding: 1.6rem 1.8rem 2rem;
@@ -2247,7 +2258,10 @@
                 <button class="mk-tb-btn" data-cmd="redo" title="Refazer"><i class="ti ti-arrow-forward-up"></i></button>
               </div>
 
-              <div class="mk-edit-body" id="mk-edit-body" contenteditable="true" data-empty="true" data-placeholder="Começa a escrever o teu artigo aqui…"></div>
+              <div class="mk-bilingual mk-bilingual-body">
+                <div class="mk-edit-body mk-ref-pt" id="mk-edit-body-pt-ref" contenteditable="false" tabindex="-1" aria-label="Conteúdo — versão PT (referência)"></div>
+                <div class="mk-edit-body" id="mk-edit-body" contenteditable="true" data-empty="true" data-placeholder="Começa a escrever o teu artigo aqui…"></div>
+              </div>
             </div>
 
             <aside class="mk-panel">
@@ -5021,9 +5035,11 @@ function _mkFillEditor(p) {
     const _ptT = document.getElementById('mk-edit-title-pt-ref');
     const _ptS = document.getElementById('mk-edit-subtitle-pt-ref');
     const _ptM = document.getElementById('mk-meta-desc-pt-ref');
+    const _ptB = document.getElementById('mk-edit-body-pt-ref');
     if(_ptT) _ptT.value = MK_STATE.draft.title_pt            || '';
     if(_ptS) _ptS.value = MK_STATE.draft.subtitle_pt         || '';
     if(_ptM) _ptM.value = MK_STATE.draft.meta_description_pt || '';
+    if(_ptB) _ptB.innerHTML = MK_STATE.draft.content_pt      || '';
   }
   document.getElementById('mk-slug').value           = p?.slug     || '';
   document.getElementById('mk-status-select').value  = p?.status   || 'draft';
