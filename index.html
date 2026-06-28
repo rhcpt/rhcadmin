@@ -588,6 +588,10 @@
       </div>
 
       <div class="table-wrap">
+        <div class="companies-search-wrap">
+          <i class="ti ti-search"></i>
+          <input id="companies-search" type="text" placeholder="Pesquisar empresa..." oninput="_filterCompanies()" />
+        </div>
         <div class="table-head companies-grid">
           <div>Empresa</div>
           <div>Pack</div>
@@ -1610,6 +1614,18 @@
   color: #ddd; font-size: 13px; font-family: inherit;
 }
 #tab-tickets .tk-search-wrap input::placeholder { color: #555; }
+#tab-companies .companies-search-wrap {
+  padding: 12px 14px;
+  border-bottom: 1px solid #1e1e1e;
+  display: flex; align-items: center; gap: 8px;
+  background: #0d0d0d;
+}
+#tab-companies .companies-search-wrap i { color: #555; font-size: 16px; }
+#tab-companies .companies-search-wrap input {
+  flex: 1; background: transparent; border: none; outline: none;
+  color: #ddd; font-size: 13px; font-family: inherit;
+}
+#tab-companies .companies-search-wrap input::placeholder { color: #555; }
 #tab-tickets .tk-filter-row {
   padding: 10px 14px;
   border-bottom: 1px solid #1e1e1e;
@@ -3314,12 +3330,40 @@ function initials(name) {
   return name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
 }
 
+// Client-side search over STATE.companies. Filters by name, case-insensitive,
+// substring. Re-render runs on every keystroke; STATE itself is never touched.
+// The input lives outside #companies-body, so re-rendering the body doesn't
+// touch the input element — focus and cursor position stay put by construction.
+let _companiesSearch = '';
+function _filterCompanies() {
+  _companiesSearch = (document.getElementById('companies-search')?.value || '').trim();
+  renderCompanies();
+}
+
 function renderCompanies() {
   const body = document.getElementById('companies-body');
+  const sub  = document.getElementById('companies-sub');
+
   if(!STATE.companies.length) {
     body.innerHTML = '<div class="empty">Nenhuma empresa registada ainda.<br>Envia o primeiro convite para começar.</div>';
+    if(sub) sub.textContent = '0 empresas registadas';
     return;
   }
+
+  // Apply name filter (case-insensitive, substring). Empty term = full list.
+  const _term = _companiesSearch.toLowerCase();
+  const _filtered = _term
+    ? STATE.companies.filter(c => (c.name||'').toLowerCase().includes(_term))
+    : STATE.companies;
+
+  // Filter active but no matches → distinct empty state so the admin sees
+  // they're looking at a subset, not a fresh org with no companies.
+  if(!_filtered.length) {
+    body.innerHTML = '<div class="empty">Nenhuma empresa encontrada.</div>';
+    if(sub) sub.textContent = `0 de ${STATE.companies.length} empresa${STATE.companies.length!==1?'s':''}`;
+    return;
+  }
+
   // Build a quick lookup of company_name → most recent invite email,
   // so we can show the email the invite was sent to instead of "—".
   const inviteEmailByCompany = {};
@@ -3332,7 +3376,7 @@ function renderCompanies() {
   });
 
   const planLabel = { starter: 'Starter', growth: 'Growth', pro: 'Pro' };
-  body.innerHTML = STATE.companies.map(c => {
+  body.innerHTML = _filtered.map(c => {
     const planText = planLabel[c.plan] || 'Starter';
     return `
     <div class="table-row companies-grid">
@@ -3349,6 +3393,14 @@ function renderCompanies() {
       </div>
     </div>`;
   }).join('');
+
+  // Subtitle: "X de N" when a filter is active, "N empresa(s) registada(s)"
+  // when it isn't. Overrides whatever loadData() wrote — same render is
+  // called by loadData on every refresh, so the message stays in sync.
+  if(sub) {
+    if(_term) sub.textContent = `${_filtered.length} de ${STATE.companies.length} empresa${STATE.companies.length!==1?'s':''}`;
+    else      sub.textContent = `${STATE.companies.length} empresa${STATE.companies.length!==1?'s':''} registada${STATE.companies.length!==1?'s':''}`;
+  }
 }
 
 // ── Detalhes da Empresa modal ──
